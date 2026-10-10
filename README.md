@@ -2,7 +2,10 @@
 
 AloeForge is a **Go + Python** project for researching and implementing AloePri V2-style privacy-preserving LLM compilation and inference.
 
-**Status:** P0 CPU-only Go/Python bootstrap. CLI help/version and importable package boundaries are implemented. Model inspection, transformations, IPC and inference remain unimplemented. No complete AloePri V2 implementation or cryptographic privacy claim.
+**Status:** P1 CPU-only structural inventory and diagnostic artifact foundation.
+Strict HF/safetensors inspection, Go staging/recovery/verification and atomic Linux
+publication are implemented. Transforms, IPC, inference and semantic model adapters
+remain unimplemented. No complete AloePri V2 implementation or privacy claim.
 
 ## Design
 
@@ -14,8 +17,9 @@ AloeForge is a **Go + Python** project for researching and implementing AloePri 
 
 Use Go **1.25.3**, Python **3.12.14** and GNU Make. Python packaging pins
 Hatchling 1.27.0, pytest 8.4.2 and Ruff 0.14.0; CI pins pip 25.2.
-Go uses only the standard library, and the Python packages have no runtime
-dependencies. Setup downloads development tools only, never models.
+Go uses the standard library plus pinned `golang.org/x/sys` v0.37.0 for Linux
+locking and no-replace rename. Python packages have no runtime dependencies.
+Setup downloads development dependencies/tools only, never models.
 
 ```sh
 python3 -m venv .venv
@@ -24,6 +28,7 @@ python3 -m venv .venv
 make check
 go run ./cmd/aloeforge version
 go run ./cmd/aloeforge inspect --help
+go run ./cmd/aloeforge verify --help
 ```
 
 `make lint` checks Go formatting/vet and Python Ruff lint/format.
@@ -35,9 +40,14 @@ The independent reference and worker smoke tests can also run separately:
 .venv/bin/python -m pytest -q python/tests/worker
 ```
 
-`inspect` without exactly `--help` or `-h` returns exit 1 with a static
-unimplemented diagnostic and opens no model files. Invalid CLI usage returns
-exit 2. Arguments are not echoed into diagnostics.
+`inspect --model-root PATH` checks local HF/safetensors metadata without reading
+payloads and prints counts, known architecture identity and inventory hash.
+`verify --artifact-root PATH` streams hashes of a P1 diagnostic artifact and prints
+its kind/count/hash. Verification/I/O failures return exit 1; invalid CLI usage
+returns exit 2. Paths, tensor names and raw metadata are not echoed.
+See [`docs/ARTIFACT_CONTRACT.md`](docs/ARTIFACT_CONTRACT.md) for supported identities,
+limits, source-content binding, stage API, recovery and Linux filesystem needs.
+P1 artifacts are diagnostic-only and must not be sent to an untrusted server.
 
 ## Codex Cloud
 
@@ -47,10 +57,9 @@ environment and checkout the intended branch; the Starter Kit documents already
 live in the repository and need no archive extraction. Follow
 [`docs/CODEX_CLOUD.md`](docs/CODEX_CLOUD.md) for pinned tool setup. Run the same
 `make check` locally and in CPU CI. Submit one scoped PR with exact commands,
-exit statuses, changed files, skipped tests and limitations. When Starter Kit
-PR #1 is pending, use a separate P0 branch based on `codex/starter-kit` and target
-that branch so the implementation diff stays separate. After #1 merges, retarget
-the P0 PR to `main`. Never merge automatically. P1–P8 begin only after P0 review.
+exit statuses, changed files, skipped tests and limitations. P0 is merged into
+`main`; start each authorized task from current `main` in a new branch and submit
+one scoped PR. Never merge automatically or advance beyond the authorized task.
 
 ## Package and trust boundaries
 
@@ -58,7 +67,8 @@ the P0 PR to `main`. Never merge automatically. P1–P8 begin only after P0 revi
 identification. `python/src/aloeforge_reference` is the independent numerical
 oracle boundary, and `python/src/aloeforge_worker` is the trusted offline transform
 boundary. They are importable and separately testable but implement no math and
-do not import each other. There is no remote runtime package in P0.
+do not import each other. There is no remote runtime package. P1 adds Go structural
+inventory/diagnostic artifact packages; Python still implements no transforms.
 
 The trusted offline compiler/worker may access source weights and private
 material. The trusted client owns Client Secret, tokenizer, plaintext prompts
@@ -70,7 +80,8 @@ must still keep sensitive data outside tracked files and cloud prompts.
 
 Go/Python control messages must be small, versioned and size bounded. Tensors
 move through validated files, mmap or bounded streams, never JSON payloads.
-Path/shape/dtype/layout validation and all IPC remain future work. See
+P1 validates paths and structural shapes/dtypes; semantic layout admission and all
+IPC remain future work. See
 [`docs/BOOTSTRAP_CONTRACTS.md`](docs/BOOTSTRAP_CONTRACTS.md) for the four versioned,
 explicitly unimplemented contract drafts and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the intended boundaries.

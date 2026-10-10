@@ -1,17 +1,21 @@
-// Package cli implements only the bootstrap command surface.
+// Package cli exposes bounded structural inspection and artifact verification.
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
+	"github.com/yakumioto/AloeForge/internal/artifact"
+	"github.com/yakumioto/AloeForge/internal/model"
 	"github.com/yakumioto/AloeForge/internal/version"
 )
 
-const usage = "Usage: aloeforge <version|inspect>\n"
-const inspectHelp = "Usage: aloeforge inspect --help\n\nModel inspection is not implemented in P0. No model files are opened.\n"
+const usage = "Usage: aloeforge <version|inspect|verify>\n"
+const inspectHelp = "Usage: aloeforge inspect --model-root PATH\n\nRead bounded HF/safetensors metadata only. Structural identification does not imply transform support.\n"
+const verifyHelp = "Usage: aloeforge verify --artifact-root PATH\n\nVerify a P1 diagnostic-only artifact and stream its content hashes.\n"
 
-// Run returns 0 for informational commands, 1 for unimplemented operations,
+// Run returns 0 on success, 1 for verification or I/O failures,
 // and 2 for invalid usage. User-supplied arguments are never echoed.
 func Run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -34,9 +38,50 @@ func Run(args []string, stdout, stderr io.Writer) int {
 			fmt.Fprint(stdout, inspectHelp)
 			return 0
 		}
-		fmt.Fprintln(stderr, "inspect is not implemented in P0")
-		return 1
+		if len(args) != 3 || args[1] != "--model-root" || args[2] == "" {
+			fmt.Fprint(stderr, inspectHelp)
+			return 2
+		}
+		inventory, err := model.Inspect(args[2])
+		if err != nil {
+			fmt.Fprintln(stderr, "inspection failed:", err)
+			return 1
+		}
+		return summary(stdout, stderr, struct {
+			SchemaVersion int    `json:"schema_version"`
+			Architecture  string `json:"architecture"`
+			Shards        int    `json:"shards"`
+			Tensors       int    `json:"tensors"`
+			InventoryHash string `json:"inventory_sha256"`
+		}{inventory.SchemaVersion, inventory.Architecture, len(inventory.Shards), len(inventory.Tensors), inventory.Hash()})
+	case "verify":
+		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
+			fmt.Fprint(stdout, verifyHelp)
+			return 0
+		}
+		if len(args) != 3 || args[1] != "--artifact-root" || args[2] == "" {
+			fmt.Fprint(stderr, verifyHelp)
+			return 2
+		}
+		manifest, digest, err := artifact.Verify(args[2])
+		if err != nil {
+			fmt.Fprintln(stderr, "verification failed:", err)
+			return 1
+		}
+		return summary(stdout, stderr, struct {
+			Kind         string `json:"kind"`
+			Files        int    `json:"files"`
+			ManifestHash string `json:"manifest_sha256"`
+		}{manifest.Kind, len(manifest.Files), digest})
 	}
 	fmt.Fprint(stderr, usage)
 	return 2
+}
+
+func summary(stdout, stderr io.Writer, value any) int {
+	if err := json.NewEncoder(stdout).Encode(value); err != nil {
+		fmt.Fprintln(stderr, "cannot write verification summary")
+		return 1
+	}
+	return 0
 }
