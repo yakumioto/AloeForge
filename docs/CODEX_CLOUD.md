@@ -1,8 +1,8 @@
 # Codex Cloud playbook
 
 1. Select the already configured Codex Cloud environment for `yakumioto/AloeForge`.
-2. Checkout this Starter Kit PR once it is merged (or use its branch deliberately).
-3. Give Codex the contents of `codex/tasks/00-bootstrap.md`. Complete exactly one task in one PR, never directly on main.
+2. Checkout current `main`; P0 is merged. Create a new task branch.
+3. Give Codex the next authorized task from `codex/tasks/`. Complete exactly one task in one PR, never directly on main.
 4. Initial environment should provide pinned Go, Python 3.12, pytest and Ruff. P0 must be CPU-only without model downloads, CUDA or vLLM.
 5. Require actual `make check` output in the PR, with skipped tests named explicitly.
 6. Run real model, vLLM and CUDA integration on a separate explicitly configured GPU runner.
@@ -30,7 +30,11 @@ Set `GO`, `GOFMT` and `PYTHON` when tool executables are outside `PATH` or when
 using an alternate virtual environment. Tests import installed packages rather
 than relying on a `PYTHONPATH` override.
 
-When PR #1 is unmerged, P0 uses `codex/p0-bootstrap` derived from
-`codex/starter-kit` with a separate PR targeting `codex/starter-kit`. Retarget to
-`main` after the Starter Kit merges. Do not change or merge the documentation PR
-as part of P0. Record actual results in the P0 PR; no GPU gate is claimed.
+P1 uses pinned `golang.org/x/sys` v0.37.0 for Linux filesystem primitives. Run
+`go mod download` during setup if the module cache is empty; checks are offline
+once tools/dependencies are installed. Read `docs/ARTIFACT_CONTRACT.md` before
+changes to inventory, staging or publication. Generate synthetic sparse fixtures
+with `python/scripts/p1_synthetic_inventory.py` in a new `work/` directory and
+measure them with `python/scripts/p1_measure_rss.py`; no models are downloaded.
+Real models, GPU and P2–P8 tests remain outside P1. Record exact commands,
+limitations and RSS evidence in the PR.

@@ -1,9 +1,12 @@
 # Internal package boundaries
 
-ENGINEERING INTERPRETATION — P0 implements `cli` (argument dispatch and help)
-and `version` (build identification) only. `cmd/aloeforge` wires process I/O
-and exit status; tests call the CLI without starting a process.
+ENGINEERING INTERPRETATION — `cli` dispatches version, structural inventory and
+diagnostic verification; `version` owns build identification. `cmd/aloeforge`
+wires process I/O and exit status. P1 adds `strictjson` (bounded JSON),
+`safetensors` (header validation), `model` (HF inventory and private source binding)
+and `artifact` (staging, recovery, verification and atomic Linux publication).
 
-Future compiler, client and gateway packages remain unimplemented. They must
+See `docs/ARTIFACT_CONTRACT.md`. Transform compiler, client and gateway remain
+unimplemented. They must
 have separate entry points and dependencies following `docs/ARCHITECTURE.md`.
 The independent Python reference must not import the production worker.

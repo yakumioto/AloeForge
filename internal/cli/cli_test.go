@@ -22,9 +22,13 @@ func TestRun(t *testing.T) {
 		{"unknown command", []string{"private-prompt"}, 2, "", usage},
 		{"version arguments", []string{"version", "private-prompt"}, 2, "", usage},
 		{"help arguments", []string{"--help", "private-prompt"}, 2, "", usage},
-		{"inspect unavailable", []string{"inspect"}, 1, "", "inspect is not implemented in P0\n"},
-		{"inspect path", []string{"inspect", "private-prompt"}, 1, "", "inspect is not implemented in P0\n"},
-		{"inspect extra arguments", []string{"inspect", "--help", "private-prompt"}, 1, "", "inspect is not implemented in P0\n"},
+		{"inspect missing root", []string{"inspect"}, 2, "", inspectHelp},
+		{"inspect path", []string{"inspect", "private-prompt"}, 2, "", inspectHelp},
+		{"inspect extra arguments", []string{"inspect", "--help", "private-prompt"}, 2, "", inspectHelp},
+		{"verify help", []string{"verify", "--help"}, 0, verifyHelp, ""},
+		{"verify missing root", []string{"verify"}, 2, "", verifyHelp},
+		{"verify invalid root", []string{"verify", "--artifact-root", "private-prompt"}, 1, "", "verification failed: cannot open artifact root\n"},
+		{"inspect invalid root", []string{"inspect", "--model-root", "private-prompt"}, 1, "", "inspection failed: cannot open model root\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
