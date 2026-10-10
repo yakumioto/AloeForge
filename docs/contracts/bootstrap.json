@@ -1,0 +1,56 @@
+{
+  "ModelIR": {
+    "schema_version": 1,
+    "status": "unimplemented",
+    "architecture_id": null,
+    "tokenizer_fingerprint": null,
+    "source_tensor_inventory": null,
+    "output_tensor_inventory": null,
+    "logical_hidden_dimensions": null,
+    "physical_hidden_dimensions": null,
+    "attention_layout": null,
+    "normalization": null,
+    "rope_layout": null,
+    "ffn_layout": null,
+    "layer_tensor_roles": null,
+    "moe_layout": null,
+    "mla_layout": null,
+    "sharding": null,
+    "quantization": null
+  },
+  "MethodContract": {
+    "schema_version": 1,
+    "status": "unimplemented",
+    "method_revision": null,
+    "evidence_label": null,
+    "paper_reference": null,
+    "profile": null,
+    "rng_algorithm": null,
+    "rng_revision": null,
+    "transform_specification": null,
+    "acceptance_gates": null
+  },
+  "RuntimeContract": {
+    "schema_version": 1,
+    "status": "unimplemented",
+    "protocol_revision": null,
+    "artifact_id": null,
+    "method_revision": null,
+    "binding_id": null,
+    "tokenizer_fingerprint": null,
+    "loader_revision": null,
+    "cache_layout": null,
+    "mapped_special_token_ids": null,
+    "context_bounds": null,
+    "supported_features": null
+  },
+  "SecretBinding": {
+    "schema_version": 1,
+    "status": "unimplemented",
+    "artifact_id": null,
+    "binding_id": null,
+    "tokenizer_fingerprint": null,
+    "method_revision": null,
+    "protocol_revision": null
+  }
+}
