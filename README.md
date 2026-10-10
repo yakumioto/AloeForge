@@ -2,12 +2,12 @@
 
 AloeForge is a **Go + Python** project for researching and implementing AloePri V2-style privacy-preserving LLM compilation and inference.
 
-**Status:** P2 CPU-only synthetic token-permutation diagnostic baseline.
-P1 inspection/staging/recovery/atomic publication remain available. Go now maps
-vocabulary IDs and embedding/head rows, stores an external Client Secret, and
-checks artifact/client binding. An independent Python oracle verifies tiny tied
-and untied fixtures. Transformer transforms/inference, IPC and semantic model
-adapters remain unimplemented. No full AloePri V2 implementation or privacy claim.
+**Status:** P3 CPU-only Go client/gateway protocol slice with a deterministic fake
+token backend. P1 inventory/artifact lifecycle and P2 synthetic token permutation
+remain available. P3 adds verified HTTPS, binding handshake, token-only SSE,
+client inverse mapping and incremental UTF-8/local stops. Transformer inference,
+full-V2 transforms, Python IPC and real tokenizer/model adapters remain unimplemented.
+No full AloePri V2 implementation or privacy claim.
 
 ## Design
 
@@ -62,6 +62,22 @@ Use `--resume` to reload the saved secret and verified checkpoint.
 from the trusted compiler/client channel. P2 artifacts also remain diagnostic-only.
 See [`docs/P2_VALIDATION.md`](docs/P2_VALIDATION.md) for commands and actual evidence.
 
+P3 libraries and exact wire/API/limits are documented in
+[`docs/RUNTIME_PROTOCOL.md`](docs/RUNTIME_PROTOCOL.md). Applications supply locally
+tokenized IDs and exact byte pieces; no text round-trip fallback or real model
+backend exists. Configure the fake gateway with public metadata and physical IDs
+only; keep all P1/P2 diagnostic weights and Client Secrets on the trusted side.
+Use the gateway's TLS server helper and a client with verified certificates.
+Exercise the complete local CPU slice without downloading a model:
+
+```sh
+go test -count=1 ./internal/clientruntime ./internal/gateway ./internal/runtimeprotocol
+```
+
+See [`docs/P3_VALIDATION.md`](docs/P3_VALIDATION.md) for actual end-to-end,
+negative, race and fuzz evidence. Request replay protection is bounded and
+process-local; partial streams are explicit and never automatically retried.
+
 ## Codex Cloud
 
 Read [`AGENTS.md`](AGENTS.md), all engineering documents under `docs/`, and
@@ -81,7 +97,8 @@ identification. `python/src/aloeforge_reference` is the independent numerical
 oracle boundary, and `python/src/aloeforge_worker` is the trusted offline transform
 boundary. They are importable and separately testable and do not import each other.
 The reference package includes the independent P2 synthetic mapping/logit oracle;
-the worker still implements no transforms. There is no remote runtime package.
+the worker still implements no transforms. P3 adds `internal/clientruntime`,
+`internal/gateway` and `internal/runtimeprotocol` with a fake backend only.
 P2 adds `internal/tokenbaseline` atop the P1 inventory/artifact packages.
 
 The trusted offline compiler/worker may access source weights and private

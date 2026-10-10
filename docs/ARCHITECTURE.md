@@ -1,4 +1,4 @@
-# Architecture (proposed, not implemented)
+# Architecture (target design; P1–P3 diagnostic slices implemented)
 
 ```mermaid
 flowchart TB
@@ -30,3 +30,12 @@ Large Tensors should move via bounded file I/O or mmap, never JSON. Independent 
 3. No private key data in public manifests, server caches, logs or model sidecars.
 4. Runtime artifact ID, binding ID, tokenizer fingerprint and protocol revision must agree.
 5. A compiler working-set budget is not a total RSS/GPU-memory guarantee.
+
+## Implemented P3 slice
+
+DIAGNOSTIC — `internal/clientruntime` and `internal/gateway` implement the
+CPU protocol path with a Go fixed physical-ID fake backend. The client owns
+Secret and local byte-piece decoding; the gateway owns only public metadata and
+fake IDs. It loads no model/artifacts. The Python loader/vLLM path in the target
+diagram, real HF tokenization and full transformer inference remain unimplemented.
+See `docs/RUNTIME_PROTOCOL.md` for supported API, gates and bounded retry semantics.

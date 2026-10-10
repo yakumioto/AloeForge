@@ -319,3 +319,17 @@ func FuzzPermutationInverse(f *testing.F) {
 		}
 	})
 }
+
+func TestExportedPublicBindingIsDetachedAndNilSafe(t *testing.T) {
+	s := fixedSecret(t, testContext())
+	b := s.PublicBinding()
+	b.MappedSpecialIDs["bos"][0] = 0
+	b.BindingID = "changed"
+	if s.PublicBinding().BindingID == "changed" || s.PublicBinding().MappedSpecialIDs["bos"][0] != 2 {
+		t.Fatal("public client accessor aliases private state")
+	}
+	var missing *Secret
+	if missing.PublicBinding() != nil {
+		t.Fatal("nil secret exposed binding")
+	}
+}

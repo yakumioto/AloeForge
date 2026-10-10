@@ -12,6 +12,9 @@ mapping, external Client Secret lifecycle and diagnostic client binding checks.
 binding metadata and finite-F32 verification, preserving P1 encodings without it.
 
 See `docs/ARTIFACT_CONTRACT.md` and `docs/TOKEN_BASELINE_CONTRACT.md`.
-Full transformer compiler, client runtime and gateway remain unimplemented. They must
-have separate entry points and dependencies following `docs/ARCHITECTURE.md`.
+P3 adds `runtimeprotocol` (strict public wire types), `clientruntime` (trusted Go
+library owning mapping and local UTF-8/stop handling), and `gateway` (TLS/SSE
+handler with a fixed physical-ID fake backend and no Secret/tokenizer/weight access).
+See `docs/RUNTIME_PROTOCOL.md`. Full transformer compiler and real inference
+remain unimplemented; follow `docs/ARCHITECTURE.md` for their separate boundaries.
 The independent Python reference must not import the production worker.
