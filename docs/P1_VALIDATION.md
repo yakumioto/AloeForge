@@ -202,3 +202,62 @@ Uncached unit results: artifact 0.045s, CLI 0.003s, model 0.013s, safetensors
 model 1.026s, safetensors 1.015s, strictjson 1.010s. Final `make check` is shown
 above (Python 34 passed in 0.05s). The failed initial CI skipped its later race/fuzz
 step because `make check` failed; the corrected PR run is recorded in the PR body.
+
+## PR #5 subprocess review audit
+
+The two Sourcery/opengrep comments on `p1_measure_rss.py` name
+`python.lang.security.audit.dangerous-subprocess-use-audit` and
+`python.lang.security.audit.dangerous-subprocess-use-tainted-env-args`.
+Both concern the same inspection child. The original call already used an argv
+list and the default `shell=False`; it did not interpolate a shell command.
+These are audited false positives for this trusted offline developer tool.
+
+The call now explicitly sets `shell=False`. CLI parsing requires an existing
+regular executable and an existing model directory, resolving both to absolute
+paths before launching a child. Commands/flags remain fixed; spaces, quotes,
+shell metacharacters and leading-dash directory names remain one literal path
+argument. No PATH lookup or shell quoting is used. `shlex.quote` is inappropriate
+for an argv list because it would alter the filenames.
+
+`--binary` must identify a trusted locally built AloeForge executable. Validating
+its path does **not** authenticate its contents or make an attacker-selected
+program safe. This script must not be exposed as a remote executable-selection
+service. Two rule-specific `nosemgrep` annotations document only this reviewed
+call/argument; no file-wide or repository-wide security checks are disabled.
+
+Executed after this change (exit 0):
+
+```sh
+.venv/bin/python -m pytest -q -c python/pyproject.toml python/tests/tooling/test_p1_measure_rss.py
+PATH="/workspace/work/tools/go/bin:$PATH" make check
+.venv/bin/python python/scripts/p1_measure_rss.py --binary /workspace/work/aloeforge-p1 --root /workspace/work/p1-multishard
+.venv/bin/python python/scripts/p1_measure_rss.py --binary /workspace/work/aloeforge-p1 --root /workspace/work/p1-large-header
+git diff --check
+```
+
+Focused tests: **13 passed** in 0.11s. They run a real synthetic child with special
+filenames, assert exact argv and the absence of injected shell marker files,
+reject missing/non-executable/directory/FIFO/NUL paths before child creation, and
+propagate nonzero exit/invalid JSON rather than emitting a success report.
+`make check`: Go formatting/vet/tests passed; Ruff lint/format passed (8 files);
+**47 Python tests passed** in 0.16s, no skips. Fresh compiled inspection measurements
+still passed: multishard **33,424 KiB / 0.503s**, large header
+**52,792 KiB / 0.575s**, with unchanged inventory hashes.
+
+The named public rules were also checked with local opengrep **1.30.2**:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/semgrep/semgrep-rules/develop/python/lang/security/audit/dangerous-subprocess-use-audit.yaml -o /workspace/work/subprocess-audit.yaml
+curl -fsSL https://raw.githubusercontent.com/semgrep/semgrep-rules/develop/python/lang/security/audit/dangerous-subprocess-use-tainted-env-args.yaml -o /workspace/work/subprocess-tainted.yaml
+/workspace/work/tools/opengrep scan --config /workspace/work/subprocess-audit.yaml --config /workspace/work/subprocess-tainted.yaml --disable-version-check --json --output /workspace/work/p1-rss-scan.json python/scripts/p1_measure_rss.py
+/workspace/work/tools/opengrep scan --config /workspace/work/subprocess-audit.yaml --config /workspace/work/subprocess-tainted.yaml --disable-version-check --disable-nosem --json --output /workspace/work/p1-rss-unsuppressed.json python/scripts/p1_measure_rss.py
+```
+
+Both scans exited 0 with no scan errors: normal scanning had **0 findings**;
+`--disable-nosem` had the **2 expected audit findings**. Suppression records the
+manual audit, not proof that arbitrary executables are safe. The downloaded rule
+SHA-256s, in command order, were
+`50f69dc35f47e405633559f54fc2b3bd344707221742400e74b1c902c1f76faa` and
+`0f3f3f8fafef5b828a15253585e4c6648c46c6fd1cca4b0ae8c70a9399def44d`;
+the unpinned upstream branch may subsequently change. This is a local reproduction
+of the named rules; hosted Sourcery review status is independent.
