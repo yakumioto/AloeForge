@@ -33,6 +33,7 @@ def source_fixture(
     tied=False,
     kv=1,
     heads=2,
+    head_dim=4,
     dtype="F32",
     layers=2,
     vocab=11,
@@ -40,7 +41,7 @@ def source_fixture(
     zero_head=False,
 ):
     root.mkdir(mode=0o700)
-    hidden = heads * 4
+    hidden = heads * head_dim
     c = {
         "architectures": ["Qwen2ForCausalLM"],
         "model_type": "qwen2",
@@ -75,8 +76,8 @@ def source_fixture(
             tensors[prefix + norm + ".weight"] = rng.uniform(0.2, 1.8, hidden)
         for role, rows, cols in [
             ("self_attn.q_proj", hidden, hidden),
-            ("self_attn.k_proj", kv * 4, hidden),
-            ("self_attn.v_proj", kv * 4, hidden),
+            ("self_attn.k_proj", kv * head_dim, hidden),
+            ("self_attn.v_proj", kv * head_dim, hidden),
             ("self_attn.o_proj", hidden, hidden),
             ("mlp.gate_proj", intermediate, hidden),
             ("mlp.up_proj", intermediate, hidden),

@@ -201,3 +201,9 @@ cancellation, partial streams, forbidden-marker logging checks, concurrent slots
 full lifetime ledger and real slow-reader write deadlines. See
 [P3_VALIDATION.md](P3_VALIDATION.md) for actual commands/results. No model, GPU,
 real HF tokenizer, Python runtime, semantic generation or privacy evaluation.
+
+P6 preparation adds `gateway.NewRelay` with a trusted in-process physical-ID
+Backend/TokenStream mock interface. It preserves this profile/binding and all
+wire rules, pulls once per sent token, closes on stop/error/disconnect and
+redacts backend errors. It does not accept dense identities/artifacts, add Python
+IPC or admit real inference. See VLLM_BACKEND_CONTRACT.md and P6_VALIDATION.md.

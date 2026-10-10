@@ -1,4 +1,4 @@
-# Architecture (target design; P1–P5 diagnostic slices implemented)
+# Architecture (target design; P1–P5 slices and P6 CPU preparation)
 
 ```mermaid
 flowchart TB
@@ -62,3 +62,14 @@ paired/group/FFN transforms is admitted only as noise-off diagnostic math.
 P3's gateway remains fake-only; the P5 runtime is not a production wire backend.
 Real checkpoint quality, full method admission and P6 GPU gates remain pending.
 See DENSE_COMPILER_CONTRACT.md and P5_VALIDATION.md.
+
+## P6 CPU preparation
+
+DIAGNOSTIC — `aloeforge_runtime` has an independent FP32 PyTorch graph and
+custom vLLM model/loader candidate. Artifact validation is shared with P5, while
+numerical execution never calls reference forward or the worker. Small CPU mock
+geometry passes fixed numeric gates; wider FP32 cache parity remains unresolved
+and is explicitly rejected by that mock. The controlled GPU candidate needs actual
+hardware evidence. `gateway.NewRelay` exercises a synchronous physical-token
+Backend/TokenStream lifecycle, still under P3 mock identities, without dense
+binding/IPC or an actual Python process. See VLLM_BACKEND_CONTRACT.md.

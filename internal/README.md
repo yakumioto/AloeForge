@@ -21,3 +21,9 @@ publication, plus `compile-dense` / `verify-dense`. `artifact` admits a separate
 strict finite-F32 dense contract. Follow `docs/DENSE_COMPILER_CONTRACT.md`;
 production and the physical GPU/vLLM backend remain unimplemented.
 The independent Python reference must not import the production worker.
+
+P6 preparation adds gateway Backend/TokenStream and NewRelay, restricted to P3
+mock runtime metadata. No dense wire binding or Python IPC is admitted. Backend
+calls must honor context cancellation and never log physical requests; the gateway
+pulls synchronously and closes stream resources on stop/failure/disconnect.
+See docs/VLLM_BACKEND_CONTRACT.md for this boundary and unvalidated GPU candidate.

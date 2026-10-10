@@ -69,3 +69,10 @@ DENSE_COMPILER_CONTRACT.md and P5_VALIDATION.md. CPU CI never installs the separ
 `python/requirements-p5-external.txt` real-model toolchain or downloads checkpoints.
 Run the external local-checkpoint quality runner on a controlled runner; do not
 mark the complete P5 or GPU gate passed from synthetic CPU results.
+
+P6 preparation adds a separate CI runtime-cpu job with PyTorch 2.8.0+cpu,
+independent small-graph FP32 checks and explicitly mocked vLLM APIs. Base setup
+remains NumPy-only and skips that Torch module when absent. Read
+VLLM_BACKEND_CONTRACT.md and P6_VALIDATION.md. Wider FP32 CPU cache admission,
+P5 controlled quality and actual GPU gates remain pending; the optional pinned
+GPU requirements/runner do not count as hardware evidence.
