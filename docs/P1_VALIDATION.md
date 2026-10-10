@@ -27,8 +27,8 @@ All checks passed!
 7 files already formatted
 go test ./...
 ?       github.com/yakumioto/AloeForge/cmd/aloeforge       [no test files]
-ok      github.com/yakumioto/AloeForge/internal/artifact   (cached)
-ok      github.com/yakumioto/AloeForge/internal/cli        (cached)
+ok      github.com/yakumioto/AloeForge/internal/artifact   0.029s
+ok      github.com/yakumioto/AloeForge/internal/cli        0.003s
 ok      github.com/yakumioto/AloeForge/internal/model      (cached)
 ok      github.com/yakumioto/AloeForge/internal/safetensors (cached)
 ok      github.com/yakumioto/AloeForge/internal/strictjson  (cached)
@@ -179,3 +179,26 @@ loss or hostile filesystem behavior. Source files must remain immutable; callers
 must recompute Go source-content bindings before resume. Stream readers must be
 finite; IPC and deadline/cancellation handling remain future work. See
 `ARTIFACT_CONTRACT.md` for the exact contract and adversary boundaries.
+
+## Runner umask verification
+
+The [first PR CPU run](https://github.com/yakumioto/AloeForge/actions/runs/38040340587)
+failed because test fixtures assumed `testing.TempDir` children were private under
+every umask. The production 0700 parent gate correctly rejected GitHub Runner's
+wider default directory permissions. Fixtures now explicitly create a 0700 parent
+(or tighten the owned CLI fixture directory); production checks are unchanged.
+
+These additional exact commands reproduced the Runner umask and passed (exit 0):
+
+```sh
+umask 0022
+PATH="/workspace/work/tools/go/bin:$PATH" go test -count=1 ./...
+PATH="/workspace/work/tools/go/bin:$PATH" go test -race -count=1 ./...
+PATH="/workspace/work/tools/go/bin:$PATH" make check
+```
+
+Uncached unit results: artifact 0.045s, CLI 0.003s, model 0.013s, safetensors
+0.004s, strictjson 0.002s. Uncached race results: artifact 1.144s, CLI 1.016s,
+model 1.026s, safetensors 1.015s, strictjson 1.010s. Final `make check` is shown
+above (Python 34 passed in 0.05s). The failed initial CI skipped its later race/fuzz
+step because `make check` failed; the corrected PR run is recorded in the PR body.

@@ -18,6 +18,17 @@ import (
 
 func payloadHash(data []byte) string { sum := sha256.Sum256(data); return hex.EncodeToString(sum[:]) }
 
+func privateParent(t *testing.T) string {
+	t.Helper()
+	// testing.TempDir's child permissions depend on umask. Create a private
+	// parent explicitly rather than weakening the production stage contract.
+	root := filepath.Join(t.TempDir(), "private")
+	if err := os.Mkdir(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
 func testPlan() Plan {
 	return Plan{SchemaVersion: 1, SourceInventoryHash: strings.Repeat("0", 64), SourceContentHash: strings.Repeat("0", 64), MethodRevision: "p1-diagnostic", RNGAlgorithm: "none", RNGRevision: "none", Outputs: []OutputTensor{
 		{Name: "changed.output", Shard: "out-1.safetensors", DType: "U8", Shape: []int64{2}, PayloadHash: payloadHash([]byte("ab"))},
@@ -66,7 +77,7 @@ func TestDescriptorGoldenAndBinding(t *testing.T) {
 }
 
 func TestPublishVerifiedSnapshotAndIdempotence(t *testing.T) {
-	parent := t.TempDir()
+	parent := privateParent(t)
 	plan := testPlan()
 	stage, err := Create(parent, ".stage-demo", plan)
 	if err != nil {
@@ -124,7 +135,7 @@ func TestWriteFailuresNeverPublish(t *testing.T) {
 		{"wrong content", bytes.NewReader([]byte("xy"))}, {"reader error", failedReader{}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			parent := t.TempDir()
+			parent := privateParent(t)
 			stage, err := Create(parent, ".stage-fail", testPlan())
 			if err != nil {
 				t.Fatal(err)
@@ -159,7 +170,7 @@ func TestRejectMismatchedCheckpointBindings(t *testing.T) {
 		{"output", func(p *Plan) { p.Outputs[0].Shape = []int64{3} }},
 	} {
 		t.Run(change.name, func(t *testing.T) {
-			parent := t.TempDir()
+			parent := privateParent(t)
 			stage, err := Create(parent, ".stage-binding", testPlan())
 			if err != nil {
 				t.Fatal(err)
@@ -183,7 +194,7 @@ func TestRejectMismatchedCheckpointBindings(t *testing.T) {
 func TestRejectStageCorruption(t *testing.T) {
 	for _, kind := range []string{"checkpoint version", "checkpoint hash", "checkpoint missing shard", "orphan corrupt", "unknown file", "symlink"} {
 		t.Run(kind, func(t *testing.T) {
-			parent := t.TempDir()
+			parent := privateParent(t)
 			stage, err := Create(parent, ".stage-corrupt", testPlan())
 			if err != nil {
 				t.Fatal(err)
@@ -220,7 +231,7 @@ func TestRejectStageCorruption(t *testing.T) {
 func TestNeverOverwriteDifferentTarget(t *testing.T) {
 	for _, kind := range []string{"file", "directory", "symlink"} {
 		t.Run(kind, func(t *testing.T) {
-			parent := t.TempDir()
+			parent := privateParent(t)
 			stage, err := Create(parent, ".stage-demo", testPlan())
 			if err != nil {
 				t.Fatal(err)
@@ -234,7 +245,7 @@ func TestNeverOverwriteDifferentTarget(t *testing.T) {
 			case "directory":
 				err = os.Mkdir(target, 0700)
 			case "symlink":
-				err = os.Symlink(t.TempDir(), target)
+				err = os.Symlink(privateParent(t), target)
 			}
 			if err != nil {
 				t.Fatal(err)
@@ -257,7 +268,7 @@ func TestNeverOverwriteDifferentTarget(t *testing.T) {
 func TestVerificationRejectsTampering(t *testing.T) {
 	for _, kind := range []string{"payload", "manifest hash", "unknown manifest field", "extra file", "symlink", "private tensor metadata"} {
 		t.Run(kind, func(t *testing.T) {
-			parent := t.TempDir()
+			parent := privateParent(t)
 			stage, err := Create(parent, ".stage-demo", testPlan())
 			if err != nil {
 				t.Fatal(err)
@@ -346,12 +357,12 @@ func TestInvalidPlansAndWriterRequests(t *testing.T) {
 	} {
 		plan := testPlan()
 		mutate(&plan)
-		if stage, err := Create(t.TempDir(), ".stage-invalid", plan); err == nil {
+		if stage, err := Create(privateParent(t), ".stage-invalid", plan); err == nil {
 			stage.Close()
 			t.Fatal("invalid plan accepted")
 		}
 	}
-	parent := t.TempDir()
+	parent := privateParent(t)
 	if stage, err := Create(parent, "../escape", testPlan()); err == nil {
 		stage.Close()
 		t.Fatal("staging traversal accepted")
@@ -394,7 +405,7 @@ func TestScalarAndEmptyOutputs(t *testing.T) {
 		{Name: "empty", Shard: "out.safetensors", DType: "U8", Shape: []int64{0}, PayloadHash: payloadHash(nil)},
 		{Name: "scalar", Shard: "out.safetensors", DType: "U8", Shape: []int64{}, PayloadHash: payloadHash([]byte{1})},
 	}
-	parent := t.TempDir()
+	parent := privateParent(t)
 	stage, err := Create(parent, ".stage-zero", plan)
 	if err != nil {
 		t.Fatal(err)
@@ -412,7 +423,7 @@ func TestScalarAndEmptyOutputs(t *testing.T) {
 }
 
 func TestLocksAndConcurrentWrites(t *testing.T) {
-	parent := t.TempDir()
+	parent := privateParent(t)
 	stage, err := Create(parent, ".stage-demo", testPlan())
 	if err != nil {
 		t.Fatal(err)
@@ -503,7 +514,7 @@ func TestCrashHelper(t *testing.T) {
 func TestProcessCrashAndRestart(t *testing.T) {
 	for _, point := range []string{"created", "partial", "orphan", "checkpoint", "copy", "published"} {
 		t.Run(point, func(t *testing.T) {
-			parent := t.TempDir()
+			parent := privateParent(t)
 			child := exec.Command(os.Args[0], "-test.run=^TestCrashHelper$")
 			child.Env = append(os.Environ(), "ALOE_TEST_CRASH_PARENT="+parent, "ALOE_TEST_CRASH_POINT="+point)
 			output, err := child.CombinedOutput()

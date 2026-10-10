@@ -59,6 +59,9 @@ func TestInspectSummaryAndRedactedErrors(t *testing.T) {
 
 func TestVerifySummaryAndTamperFailure(t *testing.T) {
 	parent := t.TempDir()
+	if err := os.Chmod(parent, 0700); err != nil {
+		t.Fatal(err)
+	}
 	payload := []byte{1}
 	digest := sha256.Sum256(payload)
 	plan := artifact.Plan{SchemaVersion: 1, SourceInventoryHash: strings.Repeat("0", 64), SourceContentHash: strings.Repeat("0", 64), MethodRevision: "p1-diagnostic", RNGAlgorithm: "none", RNGRevision: "none", Outputs: []artifact.OutputTensor{{Name: "output", Shard: "out.safetensors", DType: "U8", Shape: []int64{1}, PayloadHash: hex.EncodeToString(digest[:])}}}
