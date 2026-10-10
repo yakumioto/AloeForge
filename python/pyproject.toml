@@ -12,10 +12,14 @@ dependencies = []
 [project.optional-dependencies]
 reference = ["numpy==2.3.3"]
 worker = ["numpy==2.3.3"]
+runtime = ["numpy==2.3.3", "torch==2.8.0"]
 dev = ["pytest==8.4.2", "ruff==0.14.0", "numpy==2.3.3"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/aloeforge_reference", "src/aloeforge_worker"]
+packages = ["src/aloeforge_reference", "src/aloeforge_worker", "src/aloeforge_runtime"]
+
+[project.entry-points."vllm.general_plugins"]
+aloeforge_dense = "aloeforge_runtime.plugin:register"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -19,3 +19,9 @@ Cloud CPU: Go unit/vet, Python unit/Ruff, toy Tensor/Protocol tests. Controlled 
 P5 status: CPU diagnostic compiler/expanded artifact runtime and synthetic gates
 implemented. Controlled Qwen2.5-0.5B quality and P4 human/method admission are
 pending, so the full P5 gate is not marked complete. See P5_VALIDATION.md.
+
+P6 status: CPU/API preparation only. Independent PyTorch graph, strict custom
+loader/plugin candidate, P3-profile Go mock relay and separate synthetic GPU runner
+implemented. Wide FP32 CPU cache parity is unresolved and rejected by the mock.
+P5 real quality prerequisite, actual GPU/engine/cache/performance and dense wire
+integration remain pending. Full P6 is not marked complete. See P6_VALIDATION.md.

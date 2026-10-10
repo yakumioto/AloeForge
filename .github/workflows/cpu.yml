@@ -9,6 +9,29 @@ permissions:
   contents: read
 
 jobs:
+  runtime-cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25.3'
+          cache: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12.14'
+      - name: Install separate pinned CPU executor toolchain
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install pip==25.2
+          .venv/bin/python -m pip install -e './python[dev]'
+          .venv/bin/python -m pip install 'torch==2.8.0+cpu' --index-url https://download.pytorch.org/whl/cpu
+          go mod download
+      - name: Require PyTorch CPU graph and explicit vLLM API mock tests
+        run: |
+          .venv/bin/python -c 'import torch; assert torch.__version__ == "2.8.0+cpu"'
+          .venv/bin/python -m pytest -q -c python/pyproject.toml python/tests/runtime
   check:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

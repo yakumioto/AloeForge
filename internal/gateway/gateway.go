@@ -1,4 +1,4 @@
-// Package gateway implements only a bounded TLS HTTP/SSE diagnostic fake server.
+// Package gateway implements a bounded TLS HTTP/SSE diagnostic mock relay.
 // It deliberately has no access to a tokenizer, Client Secret or model weights.
 package gateway
 
@@ -40,6 +40,7 @@ type Gateway struct {
 	runtime            p.Runtime
 	auth               string
 	fake               Fake
+	backend            Backend
 	timeout, timeWrite time.Duration
 	mu                 sync.Mutex
 	seen               map[string]struct{}
@@ -177,24 +178,37 @@ func (g *Gateway) stream(w http.ResponseWriter, r *http.Request, req p.Request) 
 	if control.Flush() != nil {
 		return
 	}
+	backendError := func() {
+		code := "backend_error"
+		if ctx.Err() != nil {
+			code = "timeout"
+		}
+		if r.Context().Err() == nil {
+			send([]int{}, "error", code)
+		}
+	}
+	stream, err := g.open(ctx, req)
+	if stream != nil {
+		defer stream.Close()
+	}
+	if err != nil || stream == nil {
+		backendError()
+		return
+	}
 	count := 0
 	reason := "backend_done"
-	for _, id := range g.fake.OutputTokenIDs {
-		if count >= req.Sampling.MaxTokens {
-			reason = "length"
+	for count < req.Sampling.MaxTokens {
+		id, ok, err := stream.Next(ctx)
+		if err != nil || ctx.Err() != nil {
+			backendError()
+			return
+		}
+		if !ok {
 			break
 		}
-		if g.fake.Delay > 0 {
-			timer := time.NewTimer(g.fake.Delay)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				if r.Context().Err() == nil {
-					send([]int{}, "error", "timeout")
-				}
-				return
-			case <-timer.C:
-			}
+		if id < 0 || id >= g.runtime.Binding.VocabularySize {
+			backendError()
+			return
 		}
 		if !send([]int{id}, "", "") {
 			return
@@ -208,8 +222,9 @@ func (g *Gateway) stream(w http.ResponseWriter, r *http.Request, req p.Request) 
 			reason = "stop_token"
 			break
 		}
-		if g.fake.FailureAfter > 0 && count == g.fake.FailureAfter {
-			send([]int{}, "error", "backend_error")
+		// Preserve P3's fault injection timing, even on the max_tokens token.
+		if g.backend == nil && g.fake.FailureAfter > 0 && count == g.fake.FailureAfter {
+			backendError()
 			return
 		}
 	}

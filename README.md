@@ -2,9 +2,10 @@
 
 AloeForge is a **Go + Python** project for researching and implementing AloePri V2-style privacy-preserving LLM compilation and inference.
 
-**Status:** P5 diagnostic Qwen2.5 dense Go/Python compiler and independent CPU
-artifact runtime, including strict tensor roles, bounded offline worker files,
-external secrets, expanded residual coordinates, prefill/decode and greedy.
+**Status:** P5 diagnostic Qwen2.5 dense compiler/reference plus P6 CPU/API
+preparation: independent PyTorch graph, a controlled vLLM plugin candidate and
+Go mock backend relay. The CPU mock admits only tested small geometry; wider
+FP32 cache parity remains unresolved.
 P1–P4 inventory, mapping, fake TLS/SSE and independent math remain available.
 The Qwen2.5-0.5B real-model quality gate and P4 method review remain pending;
 production/full AloePri V2, privacy guarantees and GPU/vLLM are not admitted.
@@ -21,7 +22,8 @@ Use Go **1.25.3**, Python **3.12.14** and GNU Make. Python packaging pins
 Hatchling 1.27.0, pytest 8.4.2 and Ruff 0.14.0; CI pins pip 25.2.
 Go uses the standard library plus pinned `golang.org/x/sys` v0.37.0 for Linux
 locking and no-replace rename. Base Python packages have no runtime dependencies;
-P4/P5 reference/worker/dev extras pin NumPy 2.3.3. PyTorch is not required for CPU CI.
+P4/P5 reference/worker/dev extras pin NumPy 2.3.3. Base CPU checks do not require
+PyTorch; a separate P6 CI job installs torch==2.8.0+cpu for model/API mock tests.
 Setup downloads development dependencies/tools only, never models.
 
 ```sh
@@ -74,6 +76,14 @@ Read [`docs/DENSE_COMPILER_CONTRACT.md`](docs/DENSE_COMPILER_CONTRACT.md) and
 [`docs/P5_VALIDATION.md`](docs/P5_VALIDATION.md) for usage, fixed gates and pending
 controlled Qwen2.5-0.5B evaluation. Keep P5 diagnostic artifacts on trusted systems.
 
+P6 preparation is described in
+[`docs/VLLM_BACKEND_CONTRACT.md`](docs/VLLM_BACKEND_CONTRACT.md) and
+[`docs/P6_VALIDATION.md`](docs/P6_VALIDATION.md). The custom loader verifies local
+publication and external identities; the graph keeps physical residual width
+separate from logical head_dim. The GPU toolchain/runner is an unexecuted candidate,
+with no PagedAttention/performance claim. P5 quality and actual GPU gates remain
+pending. The Go relay still admits only P3 mock metadata, with no dense wire/IPC.
+
 P3 libraries and exact wire/API/limits are documented in
 [`docs/RUNTIME_PROTOCOL.md`](docs/RUNTIME_PROTOCOL.md). Applications supply locally
 tokenized IDs and exact byte pieces; no text round-trip fallback or real model
@@ -125,11 +135,13 @@ identification. `python/src/aloeforge_reference` is the independent numerical
 oracle boundary, and `python/src/aloeforge_worker` is the trusted offline transform
 boundary. They are importable and separately testable and do not import each other.
 The reference package includes the independent P2 synthetic mapping/logit oracle;
-the worker still implements no transforms. The separate P4 `keymat`/`v2` modules
+the separate P5 worker implements bounded offline dense transforms. P4 `keymat`/`v2` modules
 use NumPy, never import the worker, and accept only bounded diagnostic toy arrays.
 P3 adds `internal/clientruntime`,
-`internal/gateway` and `internal/runtimeprotocol` with a fake backend only.
+`internal/gateway` and `internal/runtimeprotocol` with diagnostic fake/mock backends.
 P2 adds `internal/tokenbaseline` atop the P1 inventory/artifact packages.
+`aloeforge_runtime` contains the separate P6 graph/plugin candidate; it shares
+artifact validation with the reference, never its numerical forward or worker.
 
 The trusted offline compiler/worker may access source weights and private
 material. The trusted client owns Client Secret, tokenizer, plaintext prompts
@@ -141,8 +153,9 @@ must still keep sensitive data outside tracked files and cloud prompts.
 
 Go/Python control messages must be small, versioned and size bounded. Tensors
 move through validated files, mmap or bounded streams, never JSON payloads.
-P1 validates paths and structural shapes/dtypes; semantic layout admission and all
-IPC remain future work. See
+P1 validates paths and structural shapes/dtypes; P5 adds exact diagnostic dense
+layout and bounded offline worker control/files. Real gateway/runtime IPC remains
+future work. See
 [`docs/BOOTSTRAP_CONTRACTS.md`](docs/BOOTSTRAP_CONTRACTS.md) for the four versioned,
 explicitly unimplemented contract drafts and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the intended boundaries.
