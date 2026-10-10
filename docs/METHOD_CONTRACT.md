@@ -22,3 +22,14 @@
 `production`: only after explicit numeric, semantic and attack gates.
 
 Use separate Python FP64 reference and Go/Python production worker implementations; do not reuse the same calculation to assert its own correctness. Compare logits after mapping to original vocabulary coordinate space. Reference: https://arxiv.org/abs/2603.01499v2
+
+## P4 audit and diagnostic oracle
+
+The section/page/formula audit and falsifiable ambiguity register are in
+[V2_MATH_AUDIT.md](V2_MATH_AUDIT.md). P4 performs source/shape/algebra self-review
+and independent executable tests; human method review remains pending. Only a
+bounded **diagnostic** Python oracle is admitted. Production and unqualified
+paper-reference profiles are blocked while the key/null-space, Q/K block direction,
+BlockPerm gamma/progress/tail, RMS/epsilon, MLA and security gates remain unresolved.
+The oracle has a separate noise-off mode; no production worker/compiler/backend
+or model adapter is implemented by this task.

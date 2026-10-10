@@ -1,4 +1,4 @@
-# Architecture (target design; P1–P3 diagnostic slices implemented)
+# Architecture (target design; P1–P4 diagnostic slices implemented)
 
 ```mermaid
 flowchart TB
@@ -39,3 +39,12 @@ Secret and local byte-piece decoding; the gateway owns only public metadata and
 fake IDs. It loads no model/artifacts. The Python loader/vLLM path in the target
 diagram, real HF tokenization and full transformer inference remain unimplemented.
 See `docs/RUNTIME_PROTOCOL.md` for supported API, gates and bounded retry semantics.
+
+## Implemented P4 reference boundary
+
+DIAGNOSTIC — `aloeforge_reference.keymat` / `v2` use pinned NumPy on CPU for
+bounded FP64/FP32 toy mathematics, with a separate scalar test baseline and a
+software BF16 conversion experiment. The reference imports no transform worker,
+real model loader or inference backend. `docs/V2_MATH_AUDIT.md` documents unresolved
+paper choices; production/paper-reference admission is explicitly blocked.
+P4 does not implement P5 compiler or P6 remote Python/GPU runtime.
