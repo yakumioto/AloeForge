@@ -2,13 +2,12 @@
 
 AloeForge is a **Go + Python** project for researching and implementing AloePri V2-style privacy-preserving LLM compilation and inference.
 
-**Status:** P4 CPU-only independent FP64/FP32 mathematical diagnostic oracle,
-with source/shape/formula audit and explicit production blockers. P1 inventory,
-P2 synthetic token mapping and P3 fake TLS/SSE protocol remain available.
-The oracle tests P/Q, embedding/head, MHA/GQA/MQA, RoPE, FFN, normalization and
-software BF16 conversion against a separate scalar baseline. Full-V2 production
-compilation, real inference, Python IPC and real model adapters remain unimplemented.
-No full AloePri V2 implementation or privacy claim.
+**Status:** P5 diagnostic Qwen2.5 dense Go/Python compiler and independent CPU
+artifact runtime, including strict tensor roles, bounded offline worker files,
+external secrets, expanded residual coordinates, prefill/decode and greedy.
+P1–P4 inventory, mapping, fake TLS/SSE and independent math remain available.
+The Qwen2.5-0.5B real-model quality gate and P4 method review remain pending;
+production/full AloePri V2, privacy guarantees and GPU/vLLM are not admitted.
 
 ## Design
 
@@ -22,7 +21,7 @@ Use Go **1.25.3**, Python **3.12.14** and GNU Make. Python packaging pins
 Hatchling 1.27.0, pytest 8.4.2 and Ruff 0.14.0; CI pins pip 25.2.
 Go uses the standard library plus pinned `golang.org/x/sys` v0.37.0 for Linux
 locking and no-replace rename. Base Python packages have no runtime dependencies;
-P4 reference/dev extras pin NumPy 2.3.3 for CPU math. PyTorch is not required.
+P4/P5 reference/worker/dev extras pin NumPy 2.3.3. PyTorch is not required for CPU CI.
 Setup downloads development dependencies/tools only, never models.
 
 ```sh
@@ -35,6 +34,8 @@ go run ./cmd/aloeforge inspect --help
 go run ./cmd/aloeforge verify --help
 go run ./cmd/aloeforge compile-token --help
 go run ./cmd/aloeforge verify-token --help
+go run ./cmd/aloeforge compile-dense --help
+go run ./cmd/aloeforge verify-dense --help
 ```
 
 `make lint` checks Go formatting/vet and Python Ruff lint/format.
@@ -48,7 +49,7 @@ The independent reference and worker smoke tests can also run separately:
 
 `inspect --model-root PATH` checks local HF/safetensors metadata without reading
 payloads and prints counts, known architecture identity and inventory hash.
-`verify --artifact-root PATH` streams hashes of a P1/P2 diagnostic artifact and prints
+`verify --artifact-root PATH` streams hashes of a P1/P2/P5 diagnostic artifact and prints
 its kind/count/hash. Verification/I/O failures return exit 1; invalid CLI usage
 returns exit 2. Paths, tensor names and raw metadata are not echoed.
 See [`docs/ARTIFACT_CONTRACT.md`](docs/ARTIFACT_CONTRACT.md) for supported identities,
@@ -63,6 +64,15 @@ Use `--resume` to reload the saved secret and verified checkpoint.
 `verify-token` additionally requires the expected artifact ID and tokenizer hash
 from the trusted compiler/client channel. P2 artifacts also remain diagnostic-only.
 See [`docs/P2_VALIDATION.md`](docs/P2_VALIDATION.md) for commands and actual evidence.
+
+`compile-dense` accepts the exact dense Qwen2 schema and only the explicit
+noise-off isometry diagnostic revision. It invokes a selected offline Python
+interpreter, validates worker output in Go and publishes through P1's atomic path.
+`verify-dense` checks external artifact/tokenizer identities and Client Secret
+binding. The independent runtime loads publication alone without source or secret.
+Read [`docs/DENSE_COMPILER_CONTRACT.md`](docs/DENSE_COMPILER_CONTRACT.md) and
+[`docs/P5_VALIDATION.md`](docs/P5_VALIDATION.md) for usage, fixed gates and pending
+controlled Qwen2.5-0.5B evaluation. Keep P5 diagnostic artifacts on trusted systems.
 
 P3 libraries and exact wire/API/limits are documented in
 [`docs/RUNTIME_PROTOCOL.md`](docs/RUNTIME_PROTOCOL.md). Applications supply locally

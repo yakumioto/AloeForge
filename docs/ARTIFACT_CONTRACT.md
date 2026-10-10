@@ -138,3 +138,11 @@ P2 kind requires one. Binding-free P1 records retain their previous serializatio
 and hashes. Neither kind is admitted to a remote runtime. P3–P8 remain
 unimplemented; see `P1_VALIDATION.md` for P1 commands/RSS and `P2_VALIDATION.md` for
 the independent token baseline evidence.
+
+P5 adds `p5-qwen25-dense-diagnostic-only` with `dense_contract` and strict complete
+F32 role/shape/finite validation. It is mutually exclusive with token_binding and
+is included in private plan/checkpoint/public identity. P1/P2 forbid this extension
+and preserve prior serialization/hashes when absent. The independent CPU loader
+admits this diagnostic kind only on trusted systems; it does not admit production.
+See DENSE_COMPILER_CONTRACT.md and P5_VALIDATION.md. P3/P4 are separate implemented
+diagnostic slices; full V2 and P6–P8 remain pending.

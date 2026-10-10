@@ -1,0 +1,6 @@
+# Separate controlled real-model runner only; never installed by CPU CI.
+numpy==2.3.3
+torch==2.8.0
+transformers==4.57.1
+tokenizers==0.22.1
+safetensors==0.6.2

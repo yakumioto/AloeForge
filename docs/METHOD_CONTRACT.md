@@ -33,3 +33,9 @@ paper-reference profiles are blocked while the key/null-space, Q/K block directi
 BlockPerm gamma/progress/tail, RMS/epsilon, MLA and security gates remain unresolved.
 The oracle has a separate noise-off mode; no production worker/compiler/backend
 or model adapter is implemented by this task.
+
+P5 separately adds a diagnostic full dense graph using P4's exact scaled-isometry
+ablation, paired-scale/group and FFN cancellation choices. Its sparse isometry is
+not the general Algorithm 1 sampler, and no BlockPerm/noise/calibration choice is
+silently promoted to production. See DENSE_COMPILER_CONTRACT.md. Real-model
+quality, human method review and security evaluation remain separate required gates.

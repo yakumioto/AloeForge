@@ -56,6 +56,10 @@ func (stage *Stage) Publish(name string) (string, error) {
 		manifest.Kind = TokenKind
 		manifest.Binding = stage.plan.Binding
 	}
+	if stage.plan.Dense != nil {
+		manifest.Kind = DenseKind
+		manifest.Dense = stage.plan.Dense
+	}
 	byShard := groups(stage.plan.Outputs)
 	for _, name := range names {
 		digest, err := verifyShard(stage.root, name, byShard[name])

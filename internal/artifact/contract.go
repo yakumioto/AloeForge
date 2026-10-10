@@ -35,6 +35,7 @@ type Plan struct {
 	RNGRevision         string         `json:"rng_revision"`
 	Outputs             []OutputTensor `json:"outputs"`
 	Binding             *TokenBinding  `json:"token_binding,omitempty"`
+	Dense               *DenseContract `json:"dense_contract,omitempty"`
 }
 
 type FileDigest struct {
@@ -50,6 +51,7 @@ type Manifest struct {
 	Outputs        []OutputTensor `json:"outputs"`
 	Files          []FileDigest   `json:"files"`
 	Binding        *TokenBinding  `json:"token_binding,omitempty"`
+	Dense          *DenseContract `json:"dense_contract,omitempty"`
 }
 
 type checkpoint struct {
@@ -142,6 +144,16 @@ func normalizePlan(plan Plan) (Plan, error) {
 		return Plan{}, err
 	}
 	plan.Outputs = outputs
+	if plan.Dense != nil && plan.Binding != nil {
+		return Plan{}, errors.New("mixed artifact profiles")
+	}
+	plan.Dense, err = normalizeDense(plan.Dense, outputs)
+	if err != nil {
+		return Plan{}, err
+	}
+	if plan.Dense != nil && (plan.MethodRevision != plan.Dense.MethodRevision || plan.RNGAlgorithm != plan.Dense.RNGAlgorithm || plan.RNGRevision != plan.Dense.RNGRevision) {
+		return Plan{}, errors.New("dense plan revision mismatch")
+	}
 	plan.Binding, err = normalizeTokenBinding(plan.Binding, outputs)
 	if err != nil {
 		return Plan{}, err

@@ -15,3 +15,7 @@ One scoped PR per task. PR must state files changed, actual tests run, tests ski
 | P8 | Attack evaluation, key rotation, multi-GPU, release | reproducible security/perf benchmark |
 
 Cloud CPU: Go unit/vet, Python unit/Ruff, toy Tensor/Protocol tests. Controlled model runner: pinned HF checkpoint. GPU: pinned PyTorch/CUDA/vLLM with physical GPU. Security: explicit attacker/dataset/query budget. No phase marked complete without its gate.
+
+P5 status: CPU diagnostic compiler/expanded artifact runtime and synthetic gates
+implemented. Controlled Qwen2.5-0.5B quality and P4 human/method admission are
+pending, so the full P5 gate is not marked complete. See P5_VALIDATION.md.

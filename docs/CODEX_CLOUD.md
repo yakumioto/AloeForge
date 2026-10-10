@@ -61,3 +61,11 @@ independent scalar-baseline P4 tests; CPU CI also runs
 No weights/models/keys are printed or downloaded, and no Torch/CUDA/GPU toolchain
 is installed. Preserve declared tolerances; unresolved method choices block
 production even when diagnostic covariance tests pass.
+
+P5 adds CPU-only full dense synthetic compiler/runtime tests and
+`python/scripts/p5_measure_dense.py`. Its worker/reference extras require pinned
+NumPy 2.3.3 and reject unsupported numerical toolchains. Read
+DENSE_COMPILER_CONTRACT.md and P5_VALIDATION.md. CPU CI never installs the separate
+`python/requirements-p5-external.txt` real-model toolchain or downloads checkpoints.
+Run the external local-checkpoint quality runner on a controlled runner; do not
+mark the complete P5 or GPU gate passed from synthetic CPU results.
