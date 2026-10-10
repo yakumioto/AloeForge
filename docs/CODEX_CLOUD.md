@@ -45,3 +45,9 @@ including when setting Make's `GO`/`GOFMT` overrides. Read
 `docs/TOKEN_BASELINE_CONTRACT.md`; CPU CI also runs bounded permutation fuzzing.
 P2 uses no model downloads or GPU/transformer runtimes. Keep generated model,
 output and external Client Secret directories disjoint and private where required.
+
+P3 adds verified localhost TLS tests using ephemeral test certificates, a fixed
+fake-ID script and local byte-piece fixtures. No credentials/models are fetched.
+Read `docs/RUNTIME_PROTOCOL.md`; CPU CI includes SSE and incremental UTF-8 fuzzing
+alongside full race/header/permutation checks. Keep the fake gateway free of
+P1/P2 diagnostic weight artifacts, plaintext tokenization and Client Secret access.

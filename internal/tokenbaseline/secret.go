@@ -195,3 +195,12 @@ func (secret *Secret) publicBinding() *artifact.TokenBinding {
 	}
 	return &artifact.TokenBinding{SchemaVersion: 1, Profile: artifact.TokenProfile, BindingID: secret.disk.BindingID, TokenizerFingerprint: c.TokenizerFingerprint, MethodRevision: c.MethodRevision, RNGAlgorithm: c.RNGAlgorithm, RNGRevision: c.RNGRevision, VocabularySize: c.VocabularySize, HiddenSize: c.HiddenSize, TiedEmbeddings: c.TiedEmbeddings, MappedSpecialIDs: ids}
 }
+
+// PublicBinding returns a detached public identity for the trusted client
+// handshake. It contains no private permutation or original special IDs.
+func (secret *Secret) PublicBinding() *artifact.TokenBinding {
+	if secret == nil {
+		return nil
+	}
+	return secret.publicBinding()
+}
