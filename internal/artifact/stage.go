@@ -304,6 +304,23 @@ func (stage *Stage) WriteShard(name string, readers map[string]io.Reader) error 
 	return atomicJSON(stage.root, "checkpoint.json", stage.checkpoint)
 }
 
+// PendingShards returns only incomplete shard names. Resume already verifies all
+// completed files; callers must not rewrite them or infer progress from filenames.
+func (stage *Stage) PendingShards() ([]string, error) {
+	stage.mu.Lock()
+	defer stage.mu.Unlock()
+	if stage.closed {
+		return nil, errors.New("staging session is closed")
+	}
+	result := make([]string, 0)
+	for _, name := range shardNames(stage.plan.Outputs) {
+		if stage.checkpoint.Completed[name] == "" {
+			result = append(result, name)
+		}
+	}
+	return result, nil
+}
+
 // Close releases the process lock. Persistent staging files remain for Resume.
 func (stage *Stage) Close() error {
 	stage.mu.Lock()

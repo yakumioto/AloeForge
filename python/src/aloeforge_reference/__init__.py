@@ -1,3 +1,3 @@
-"""Independent reference boundary; numerical methods are unimplemented in P0."""
+"""Independent reference boundary; P2 includes a synthetic token baseline oracle."""
 
 __version__ = "0.1.0.dev0"

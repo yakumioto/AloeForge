@@ -2,10 +2,12 @@
 
 AloeForge is a **Go + Python** project for researching and implementing AloePri V2-style privacy-preserving LLM compilation and inference.
 
-**Status:** P1 CPU-only structural inventory and diagnostic artifact foundation.
-Strict HF/safetensors inspection, Go staging/recovery/verification and atomic Linux
-publication are implemented. Transforms, IPC, inference and semantic model adapters
-remain unimplemented. No complete AloePri V2 implementation or privacy claim.
+**Status:** P2 CPU-only synthetic token-permutation diagnostic baseline.
+P1 inspection/staging/recovery/atomic publication remain available. Go now maps
+vocabulary IDs and embedding/head rows, stores an external Client Secret, and
+checks artifact/client binding. An independent Python oracle verifies tiny tied
+and untied fixtures. Transformer transforms/inference, IPC and semantic model
+adapters remain unimplemented. No full AloePri V2 implementation or privacy claim.
 
 ## Design
 
@@ -29,6 +31,8 @@ make check
 go run ./cmd/aloeforge version
 go run ./cmd/aloeforge inspect --help
 go run ./cmd/aloeforge verify --help
+go run ./cmd/aloeforge compile-token --help
+go run ./cmd/aloeforge verify-token --help
 ```
 
 `make lint` checks Go formatting/vet and Python Ruff lint/format.
@@ -42,12 +46,21 @@ The independent reference and worker smoke tests can also run separately:
 
 `inspect --model-root PATH` checks local HF/safetensors metadata without reading
 payloads and prints counts, known architecture identity and inventory hash.
-`verify --artifact-root PATH` streams hashes of a P1 diagnostic artifact and prints
+`verify --artifact-root PATH` streams hashes of a P1/P2 diagnostic artifact and prints
 its kind/count/hash. Verification/I/O failures return exit 1; invalid CLI usage
 returns exit 2. Paths, tensor names and raw metadata are not echoed.
 See [`docs/ARTIFACT_CONTRACT.md`](docs/ARTIFACT_CONTRACT.md) for supported identities,
 limits, source-content binding, stage API, recovery and Linux filesystem needs.
 P1 artifacts are diagnostic-only and must not be sent to an untrusted server.
+
+`compile-token` accepts only the explicit synthetic F32 embedding/head fixture
+schema in [`docs/TOKEN_BASELINE_CONTRACT.md`](docs/TOKEN_BASELINE_CONTRACT.md).
+Source, output and Client Secret directories must be disjoint; output/secret
+parents must be private (0700). Secret material is never printed or published.
+Use `--resume` to reload the saved secret and verified checkpoint.
+`verify-token` additionally requires the expected artifact ID and tokenizer hash
+from the trusted compiler/client channel. P2 artifacts also remain diagnostic-only.
+See [`docs/P2_VALIDATION.md`](docs/P2_VALIDATION.md) for commands and actual evidence.
 
 ## Codex Cloud
 
@@ -66,9 +79,10 @@ one scoped PR. Never merge automatically or advance beyond the authorized task.
 `cmd/aloeforge` delegates to `internal/cli`; `internal/version` owns build
 identification. `python/src/aloeforge_reference` is the independent numerical
 oracle boundary, and `python/src/aloeforge_worker` is the trusted offline transform
-boundary. They are importable and separately testable but implement no math and
-do not import each other. There is no remote runtime package. P1 adds Go structural
-inventory/diagnostic artifact packages; Python still implements no transforms.
+boundary. They are importable and separately testable and do not import each other.
+The reference package includes the independent P2 synthetic mapping/logit oracle;
+the worker still implements no transforms. There is no remote runtime package.
+P2 adds `internal/tokenbaseline` atop the P1 inventory/artifact packages.
 
 The trusted offline compiler/worker may access source weights and private
 material. The trusted client owns Client Secret, tokenizer, plaintext prompts

@@ -34,6 +34,7 @@ type Plan struct {
 	RNGAlgorithm        string         `json:"rng_algorithm"`
 	RNGRevision         string         `json:"rng_revision"`
 	Outputs             []OutputTensor `json:"outputs"`
+	Binding             *TokenBinding  `json:"token_binding,omitempty"`
 }
 
 type FileDigest struct {
@@ -48,6 +49,7 @@ type Manifest struct {
 	DescriptorHash string         `json:"descriptor_sha256"`
 	Outputs        []OutputTensor `json:"outputs"`
 	Files          []FileDigest   `json:"files"`
+	Binding        *TokenBinding  `json:"token_binding,omitempty"`
 }
 
 type checkpoint struct {
@@ -140,6 +142,13 @@ func normalizePlan(plan Plan) (Plan, error) {
 		return Plan{}, err
 	}
 	plan.Outputs = outputs
+	plan.Binding, err = normalizeTokenBinding(plan.Binding, outputs)
+	if err != nil {
+		return Plan{}, err
+	}
+	if plan.Binding != nil && (plan.MethodRevision != plan.Binding.MethodRevision || plan.RNGAlgorithm != plan.Binding.RNGAlgorithm || plan.RNGRevision != plan.Binding.RNGRevision) {
+		return Plan{}, errors.New("plan and token binding revisions differ")
+	}
 	return plan, nil
 }
 

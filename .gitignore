@@ -32,6 +32,8 @@ staging/
 .stage-*/
 .publish-*/
 .aloeforge.lock
+.client-secret.lock
+.secret-*
 dist/
 build/
 bin/

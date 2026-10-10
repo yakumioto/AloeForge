@@ -1,8 +1,10 @@
 # P1 inventory and diagnostic artifact contract
 
 ENGINEERING INTERPRETATION — Linux-only structural foundation for task 01. No
-AloePri transform, tokenizer mapping, model-semantic adapter, inference or privacy
+AloePri V2 transform, model-semantic adapter, transformer inference or privacy
 guarantee is implemented. All four P0 contract drafts remain unimplemented.
+P2's separate diagnostic token baseline extends this foundation as specified in
+[`TOKEN_BASELINE_CONTRACT.md`](TOKEN_BASELINE_CONTRACT.md).
 
 ## Source inventory
 
@@ -128,4 +130,11 @@ strings; CLI summaries expose counts and known identities/hashes only.
 **Never send P1 diagnostic artifacts to an untrusted server.** Structural/content
 consistency does not prove obfuscation, semantic correctness, external signer
 authenticity or privacy. No production artifact kind or remote loader is admitted.
-P2–P8 remain unimplemented; see `P1_VALIDATION.md` for actual commands and RSS.
+P2 admits a separate `p2-token-permutation-diagnostic-only` kind with an optional
+public token binding. Go validates its fixed synthetic F32 tensor layout, finite
+payloads, revisions, dimensions and mapped special IDs; the binding is included
+in plan/checkpoint and manifest identity. P1 kind rejects a populated binding;
+P2 kind requires one. Binding-free P1 records retain their previous serialization
+and hashes. Neither kind is admitted to a remote runtime. P3–P8 remain
+unimplemented; see `P1_VALIDATION.md` for P1 commands/RSS and `P2_VALIDATION.md` for
+the independent token baseline evidence.
