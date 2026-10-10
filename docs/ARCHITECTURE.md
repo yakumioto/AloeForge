@@ -1,4 +1,4 @@
-# Architecture (target design; P1–P4 diagnostic slices implemented)
+# Architecture (target design; P1–P5 diagnostic slices implemented)
 
 ```mermaid
 flowchart TB
@@ -48,3 +48,17 @@ software BF16 conversion experiment. The reference imports no transform worker,
 real model loader or inference backend. `docs/V2_MATH_AUDIT.md` documents unresolved
 paper choices; production/paper-reference admission is explicitly blocked.
 P4 does not implement P5 compiler or P6 remote Python/GPU runtime.
+
+## P5 dense diagnostic slice
+
+DIAGNOSTIC — Go `dense` admits exact Qwen2.5 dense tensor semantics and creates
+the private transform graph/Client Secret. The independent NumPy worker transforms
+bounded row blocks into private files; Go validates descriptors, rebinds source
+and atomically publishes a strict custom artifact. The separate NumPy reference
+runtime loads only publication and trusted external public identities, with no
+source/Secret/worker imports. It implements expanded-coordinate CPU prefill,
+decode/cache and greedy. Norm gamma folds offline; an exact sparse isometry with
+paired/group/FFN transforms is admitted only as noise-off diagnostic math.
+P3's gateway remains fake-only; the P5 runtime is not a production wire backend.
+Real checkpoint quality, full method admission and P6 GPU gates remain pending.
+See DENSE_COMPILER_CONTRACT.md and P5_VALIDATION.md.

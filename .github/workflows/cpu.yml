@@ -31,6 +31,8 @@ jobs:
         run: make check
       - name: Record independent P4 numerical evidence on CPU
         run: .venv/bin/python python/scripts/p4_measure_math.py
+      - name: Record independent P5 dense graph evidence on CPU
+        run: .venv/bin/python python/scripts/p5_measure_dense.py
       - name: Check races and fuzz headers, token mappings and runtime streams
         run: |
           go test -race ./...

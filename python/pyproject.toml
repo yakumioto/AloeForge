@@ -11,6 +11,7 @@ dependencies = []
 
 [project.optional-dependencies]
 reference = ["numpy==2.3.3"]
+worker = ["numpy==2.3.3"]
 dev = ["pytest==8.4.2", "ruff==0.14.0", "numpy==2.3.3"]
 
 [tool.hatch.build.targets.wheel]

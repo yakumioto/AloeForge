@@ -100,12 +100,16 @@ func verifyRoot(root *os.Root) (Manifest, string, error) {
 	if err := readControl(root, "manifest.json", &manifest); err != nil {
 		return manifest, "", err
 	}
-	if manifest.SchemaVersion != 1 || !(manifest.Kind == Kind && manifest.Binding == nil || manifest.Kind == TokenKind && manifest.Binding != nil) {
+	if manifest.SchemaVersion != 1 || !(manifest.Kind == Kind && manifest.Binding == nil && manifest.Dense == nil || manifest.Kind == TokenKind && manifest.Binding != nil && manifest.Dense == nil || manifest.Kind == DenseKind && manifest.Dense != nil && manifest.Binding == nil) {
 		return manifest, "", errors.New("unsupported artifact kind or manifest version")
 	}
 	outputs, err := normalizeOutputs(manifest.Outputs)
 	if err != nil {
 		return manifest, "", err
+	}
+	dense, err := normalizeDense(manifest.Dense, outputs)
+	if err != nil || hash(dense) != hash(manifest.Dense) {
+		return manifest, "", errors.New("invalid dense contract")
 	}
 	if hash(outputs) != manifest.DescriptorHash || hash(outputs) != hash(manifest.Outputs) {
 		return manifest, "", errors.New("manifest descriptors are not canonical or hash-bound")
@@ -148,7 +152,7 @@ func verifyRoot(root *os.Root) (Manifest, string, error) {
 		if digest != manifest.Files[i].SHA256 {
 			return manifest, "", errors.New("manifest file hash mismatch")
 		}
-		if manifest.Binding != nil {
+		if manifest.Binding != nil || manifest.Dense != nil {
 			if err := verifyFiniteTokenShard(root, name, byShard[name]); err != nil {
 				return manifest, "", err
 			}

@@ -15,3 +15,10 @@ type ArchitectureAdapter interface {
 Order: SmolLM2 token permutation regression → Qwen2.5-0.5B full dense → Llama dense → Qwen3 Dense/QK Norm → Qwen3 MoE → DeepSeek MoE/MLA → separately verified quantization and TP/PP/EP.
 
 Reject unsupported/ambiguous layouts and fused QKV, unrecognized architecture, quantization, GQA/rotary mode, missing/duplicated weight aliases. Do not infer full capability from model name alone.
+
+P5 implements a registry entry for exact Qwen2.5/Qwen2 dense checkpoint semantics
+in `internal/dense`. Its private TransformPlan records source roles and norm
+dependencies separately from expanded output roles/geometry. This is the named
+noise-off sparse-isometry diagnostic adapter only; the broad interface above
+remains a proposed API, not admission of other architectures. See
+DENSE_COMPILER_CONTRACT.md and the pending gates in P5_VALIDATION.md.
