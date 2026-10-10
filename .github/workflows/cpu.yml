@@ -29,7 +29,8 @@ jobs:
           go mod download
       - name: Check on CPU
         run: make check
-      - name: Check staging races and fuzz header parsing
+      - name: Check staging races and fuzz headers and token mappings
         run: |
           go test -race ./...
           go test ./internal/safetensors -run '^$' -fuzz '^FuzzHeader$' -fuzztime=3s -parallel=2
+          go test ./internal/tokenbaseline -run '^$' -fuzz '^FuzzPermutationInverse$' -fuzztime=3s -parallel=2

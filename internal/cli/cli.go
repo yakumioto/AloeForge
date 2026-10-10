@@ -11,9 +11,9 @@ import (
 	"github.com/yakumioto/AloeForge/internal/version"
 )
 
-const usage = "Usage: aloeforge <version|inspect|verify>\n"
+const usage = "Usage: aloeforge <version|inspect|verify|compile-token|verify-token>\n"
 const inspectHelp = "Usage: aloeforge inspect --model-root PATH\n\nRead bounded HF/safetensors metadata only. Structural identification does not imply transform support.\n"
-const verifyHelp = "Usage: aloeforge verify --artifact-root PATH\n\nVerify a P1 diagnostic-only artifact and stream its content hashes.\n"
+const verifyHelp = "Usage: aloeforge verify --artifact-root PATH\n\nVerify a P1/P2 diagnostic-only artifact and stream its content hashes.\n"
 
 // Run returns 0 on success, 1 for verification or I/O failures,
 // and 2 for invalid usage. User-supplied arguments are never echoed.
@@ -23,6 +23,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	switch args[0] {
+	case "compile-token", "verify-token":
+		return tokenCommand(args, stdout, stderr)
 	case "help", "--help", "-h":
 		if len(args) == 1 {
 			fmt.Fprint(stdout, usage)

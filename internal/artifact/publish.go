@@ -52,6 +52,10 @@ func (stage *Stage) Publish(name string) (string, error) {
 		return "", errors.New("cannot publish incomplete staging outputs")
 	}
 	manifest := Manifest{SchemaVersion: 1, Kind: Kind, DescriptorHash: hash(stage.plan.Outputs), Outputs: stage.plan.Outputs}
+	if stage.plan.Binding != nil {
+		manifest.Kind = TokenKind
+		manifest.Binding = stage.plan.Binding
+	}
 	byShard := groups(stage.plan.Outputs)
 	for _, name := range names {
 		digest, err := verifyShard(stage.root, name, byShard[name])

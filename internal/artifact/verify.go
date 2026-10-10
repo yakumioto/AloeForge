@@ -100,7 +100,7 @@ func verifyRoot(root *os.Root) (Manifest, string, error) {
 	if err := readControl(root, "manifest.json", &manifest); err != nil {
 		return manifest, "", err
 	}
-	if manifest.SchemaVersion != 1 || manifest.Kind != Kind {
+	if manifest.SchemaVersion != 1 || !(manifest.Kind == Kind && manifest.Binding == nil || manifest.Kind == TokenKind && manifest.Binding != nil) {
 		return manifest, "", errors.New("unsupported artifact kind or manifest version")
 	}
 	outputs, err := normalizeOutputs(manifest.Outputs)
@@ -109,6 +109,10 @@ func verifyRoot(root *os.Root) (Manifest, string, error) {
 	}
 	if hash(outputs) != manifest.DescriptorHash || hash(outputs) != hash(manifest.Outputs) {
 		return manifest, "", errors.New("manifest descriptors are not canonical or hash-bound")
+	}
+	binding, err := normalizeTokenBinding(manifest.Binding, outputs)
+	if err != nil || hash(binding) != hash(manifest.Binding) {
+		return manifest, "", errors.New("invalid or noncanonical token binding")
 	}
 	names := shardNames(outputs)
 	if len(manifest.Files) != len(names) {
@@ -143,6 +147,11 @@ func verifyRoot(root *os.Root) (Manifest, string, error) {
 		}
 		if digest != manifest.Files[i].SHA256 {
 			return manifest, "", errors.New("manifest file hash mismatch")
+		}
+		if manifest.Binding != nil {
+			if err := verifyFiniteTokenShard(root, name, byShard[name]); err != nil {
+				return manifest, "", err
+			}
 		}
 	}
 	return manifest, hash(manifest), nil

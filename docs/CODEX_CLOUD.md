@@ -38,3 +38,10 @@ with `python/scripts/p1_synthetic_inventory.py` in a new `work/` directory and
 measure them with `python/scripts/p1_measure_rss.py`; no models are downloaded.
 Real models, GPU and P2–P8 tests remain outside P1. Record exact commands,
 limitations and RSS evidence in the PR.
+
+P2 adds standard-library-only synthetic token/logit oracle tests and real Go CLI
+integration in Python. Put the pinned Go executable on `PATH` for those tests,
+including when setting Make's `GO`/`GOFMT` overrides. Read
+`docs/TOKEN_BASELINE_CONTRACT.md`; CPU CI also runs bounded permutation fuzzing.
+P2 uses no model downloads or GPU/transformer runtimes. Keep generated model,
+output and external Client Secret directories disjoint and private where required.
