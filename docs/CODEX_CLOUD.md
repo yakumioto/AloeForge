@@ -25,7 +25,8 @@ make check
 
 No additional credential, model download, GPU, CUDA, PyTorch, vLLM or Rust
 toolchain is required. `make check` performs no network operations once the
-development tools are installed. The Python runtime packages have no dependencies.
+development tools are installed. Base Python runtime packages have no dependencies; P4 reference/dev extras pin
+NumPy 2.3.3.
 Set `GO`, `GOFMT` and `PYTHON` when tool executables are outside `PATH` or when
 using an alternate virtual environment. Tests import installed packages rather
 than relying on a `PYTHONPATH` override.
@@ -51,3 +52,12 @@ fake-ID script and local byte-piece fixtures. No credentials/models are fetched.
 Read `docs/RUNTIME_PROTOCOL.md`; CPU CI includes SSE and incremental UTF-8 fuzzing
 alongside full race/header/permutation checks. Keep the fake gateway free of
 P1/P2 diagnostic weight artifacts, plaintext tokenization and Client Secret access.
+
+P4 reference/dev extras pin NumPy 2.3.3; setup's existing editable dev install
+supplies it automatically. Base/worker runtime dependency lists remain empty.
+Read `docs/V2_MATH_AUDIT.md` before mathematical changes. `make check` includes
+independent scalar-baseline P4 tests; CPU CI also runs
+`python/scripts/p4_measure_math.py` to record only seeds, counts and scalar errors.
+No weights/models/keys are printed or downloaded, and no Torch/CUDA/GPU toolchain
+is installed. Preserve declared tolerances; unresolved method choices block
+production even when diagnostic covariance tests pass.

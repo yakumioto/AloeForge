@@ -2,11 +2,12 @@
 
 AloeForge is a **Go + Python** project for researching and implementing AloePri V2-style privacy-preserving LLM compilation and inference.
 
-**Status:** P3 CPU-only Go client/gateway protocol slice with a deterministic fake
-token backend. P1 inventory/artifact lifecycle and P2 synthetic token permutation
-remain available. P3 adds verified HTTPS, binding handshake, token-only SSE,
-client inverse mapping and incremental UTF-8/local stops. Transformer inference,
-full-V2 transforms, Python IPC and real tokenizer/model adapters remain unimplemented.
+**Status:** P4 CPU-only independent FP64/FP32 mathematical diagnostic oracle,
+with source/shape/formula audit and explicit production blockers. P1 inventory,
+P2 synthetic token mapping and P3 fake TLS/SSE protocol remain available.
+The oracle tests P/Q, embedding/head, MHA/GQA/MQA, RoPE, FFN, normalization and
+software BF16 conversion against a separate scalar baseline. Full-V2 production
+compilation, real inference, Python IPC and real model adapters remain unimplemented.
 No full AloePri V2 implementation or privacy claim.
 
 ## Design
@@ -20,7 +21,8 @@ No full AloePri V2 implementation or privacy claim.
 Use Go **1.25.3**, Python **3.12.14** and GNU Make. Python packaging pins
 Hatchling 1.27.0, pytest 8.4.2 and Ruff 0.14.0; CI pins pip 25.2.
 Go uses the standard library plus pinned `golang.org/x/sys` v0.37.0 for Linux
-locking and no-replace rename. Python packages have no runtime dependencies.
+locking and no-replace rename. Base Python packages have no runtime dependencies;
+P4 reference/dev extras pin NumPy 2.3.3 for CPU math. PyTorch is not required.
 Setup downloads development dependencies/tools only, never models.
 
 ```sh
@@ -78,6 +80,22 @@ See [`docs/P3_VALIDATION.md`](docs/P3_VALIDATION.md) for actual end-to-end,
 negative, race and fuzz evidence. Request replay protection is bounded and
 process-local; partial streams are explicit and never automatically retried.
 
+P4 formula audit, proofs, ambiguities and fixed numeric gates are in
+[`docs/V2_MATH_AUDIT.md`](docs/V2_MATH_AUDIT.md). The oracle's `production` and
+unqualified `paper-reference` profiles reject unresolved choices. Noise-off and
+explicit supplied-noise modes are separate; empirical approximation drift is not
+reported as floating-point covariance. Applications can install only the math
+extra with `pip install -e './python[reference]'`. Run its independent CPU gates:
+
+```sh
+.venv/bin/python -m pytest -q python/tests/reference/test_v2_math.py
+.venv/bin/python python/scripts/p4_measure_math.py
+```
+
+See [`docs/P4_VALIDATION.md`](docs/P4_VALIDATION.md) for measured errors, commands,
+review status and exclusions. BF16 is software conversion with an FP32 carrier,
+not a BF16 compute kernel or GPU validation.
+
 ## Codex Cloud
 
 Read [`AGENTS.md`](AGENTS.md), all engineering documents under `docs/`, and
@@ -97,7 +115,9 @@ identification. `python/src/aloeforge_reference` is the independent numerical
 oracle boundary, and `python/src/aloeforge_worker` is the trusted offline transform
 boundary. They are importable and separately testable and do not import each other.
 The reference package includes the independent P2 synthetic mapping/logit oracle;
-the worker still implements no transforms. P3 adds `internal/clientruntime`,
+the worker still implements no transforms. The separate P4 `keymat`/`v2` modules
+use NumPy, never import the worker, and accept only bounded diagnostic toy arrays.
+P3 adds `internal/clientruntime`,
 `internal/gateway` and `internal/runtimeprotocol` with a fake backend only.
 P2 adds `internal/tokenbaseline` atop the P1 inventory/artifact packages.
 
