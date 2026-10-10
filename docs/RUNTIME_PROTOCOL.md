@@ -207,3 +207,8 @@ Backend/TokenStream mock interface. It preserves this profile/binding and all
 wire rules, pulls once per sent token, closes on stop/error/disconnect and
 redacts backend errors. It does not accept dense identities/artifacts, add Python
 IPC or admit real inference. See VLLM_BACKEND_CONTRACT.md and P6_VALIDATION.md.
+
+A separate trusted-local `p6-local-dense-reference` profile now connects P5's
+FP64 reference through bounded Go/Python IPC. Its dense binding, loopback-only
+entry points and process lifetime are specified in LOCAL_REFERENCE_CONTRACT.md.
+It does not change P3 remote admission or establish a GPU/production gate.

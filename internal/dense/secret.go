@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/yakumioto/AloeForge/internal/artifact"
 	"github.com/yakumioto/AloeForge/internal/model"
 )
 
@@ -23,6 +24,15 @@ type secretDisk struct {
 type Secret struct {
 	disk    secretDisk
 	inverse []int
+}
+
+// MatchesContract checks the trusted public binding without exposing a map.
+// The caller must obtain the contract from the verified compiler publication.
+func (s *Secret) MatchesContract(c artifact.DenseContract) error {
+	if s == nil || c.Validate() != nil || s.disk.BindingID != c.BindingID || len(s.inverse) != c.Vocabulary {
+		return errors.New("dense Client Secret binding mismatch")
+	}
+	return nil
 }
 
 func (*Secret) String() string   { return "[DenseClientSecret redacted]" }

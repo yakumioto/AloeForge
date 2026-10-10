@@ -41,11 +41,20 @@ func DecodeRuntime(data []byte, r *Runtime) error {
 	if strictjson.Decode(data, r, true) != nil {
 		return errors.New("invalid runtime JSON")
 	}
-	object, err := fields(data, "protocol_version", "profile", "model_id", "artifact_id", "token_binding", "supported_features", "max_prompt_tokens", "max_output_tokens", "context_tokens")
+	bindingField := "token_binding"
+	if r.Profile == LocalDenseProfile {
+		bindingField = "dense_contract"
+	}
+	object, err := fields(data, "protocol_version", "profile", "model_id", "artifact_id", bindingField, "supported_features", "max_prompt_tokens", "max_output_tokens", "context_tokens")
 	if err != nil {
 		return err
 	}
-	binding, err := fields(object["token_binding"], "schema_version", "profile", "binding_id", "tokenizer_sha256", "method_revision", "rng_algorithm", "rng_revision", "vocabulary_size", "hidden_size", "tied_embeddings", "mapped_special_token_ids")
+	var binding map[string]json.RawMessage
+	if bindingField == "dense_contract" {
+		binding, err = fields(object[bindingField], "schema_version", "profile", "method_revision", "rng_algorithm", "rng_revision", "loader_revision", "binding_id", "tokenizer_sha256", "vocabulary_size", "logical_hidden_size", "physical_hidden_size", "intermediate_size", "num_hidden_layers", "num_attention_heads", "num_key_value_heads", "head_dim", "max_position_embeddings", "logical_norm_epsilon", "rope_theta", "rope_layout", "cache_layout", "source_tied_embeddings", "mapped_special_token_ids")
+	} else {
+		binding, err = fields(object[bindingField], "schema_version", "profile", "binding_id", "tokenizer_sha256", "method_revision", "rng_algorithm", "rng_revision", "vocabulary_size", "hidden_size", "tied_embeddings", "mapped_special_token_ids")
+	}
 	if err != nil {
 		return err
 	}

@@ -39,6 +39,20 @@ func NewRelay(c Config, backend Backend) (*Gateway, error) {
 	return g, nil
 }
 
+// NewLocalDense connects a trusted local diagnostic backend. It does not admit
+// dense publications to the P3 remote relay or to a production deployment.
+func NewLocalDense(c Config, backend Backend) (*Gateway, error) {
+	if c.Runtime.Profile != p.LocalDenseProfile || backend == nil || len(c.Fake.OutputTokenIDs) != 0 || c.Fake.Delay != 0 || c.Fake.FailureAfter != 0 || !p.Equal(c.Runtime, backend.Runtime()) {
+		return nil, errors.New("invalid local dense backend configuration")
+	}
+	g, err := buildGateway(c)
+	if err != nil {
+		return nil, err
+	}
+	g.backend = backend
+	return g, nil
+}
+
 type fakeStream struct {
 	fake  Fake
 	index int

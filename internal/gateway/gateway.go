@@ -1,5 +1,6 @@
-// Package gateway implements a bounded TLS HTTP/SSE diagnostic mock relay.
-// It deliberately has no access to a tokenizer, Client Secret or model weights.
+// Package gateway implements bounded TLS/SSE diagnostic relays. It has no access
+// to tokenizer, Client Secret or weights; the local reference adapter owns the
+// public publication path on a trusted machine.
 package gateway
 
 import (
@@ -11,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"slices"
 	"sync"
@@ -48,7 +50,14 @@ type Gateway struct {
 }
 
 func New(c Config) (*Gateway, error) {
-	if c.Runtime.Validate() != nil || !p.ValidAuth(c.BearerToken) || len(c.Fake.OutputTokenIDs) > p.MaxTokens || !p.ValidIDs(c.Fake.OutputTokenIDs, c.Runtime.Binding.VocabularySize) || c.Fake.Delay < 0 || c.Fake.Delay > time.Second || c.Fake.FailureAfter < 0 || c.Fake.FailureAfter > len(c.Fake.OutputTokenIDs) {
+	if c.Runtime.Profile != p.Profile {
+		return nil, errors.New("fake gateway requires P3 profile")
+	}
+	return buildGateway(c)
+}
+
+func buildGateway(c Config) (*Gateway, error) {
+	if c.Runtime.Validate() != nil || !p.ValidAuth(c.BearerToken) || len(c.Fake.OutputTokenIDs) > p.MaxTokens || !p.ValidIDs(c.Fake.OutputTokenIDs, c.Runtime.VocabularySize()) || c.Fake.Delay < 0 || c.Fake.Delay > time.Second || c.Fake.FailureAfter < 0 || c.Fake.FailureAfter > len(c.Fake.OutputTokenIDs) {
 		return nil, errors.New("invalid fake gateway configuration")
 	}
 	if c.RequestTimeout == 0 {
@@ -69,7 +78,26 @@ func New(c Config) (*Gateway, error) {
 // diagnostics containing untrusted request material. Serve using TLS only;
 // shutdown via Server.Shutdown. Reverse proxy TLS offload is not admitted in P3.
 func (g *Gateway) Server(addr string) *http.Server {
+	// LocalServer is required for local dense sessions. Invalid addresses fail
+	// to bind even if a caller accidentally uses this older helper.
+	if g.runtime.Profile == p.LocalDenseProfile && !loopbackAddress(addr) {
+		addr = "invalid-local-dense-address"
+	}
 	return &http.Server{Addr: addr, Handler: g, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: g.timeout + g.timeWrite, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12}, ErrorLog: log.New(io.Discard, "", 0)}
+}
+
+func loopbackAddress(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	ip := net.ParseIP(host)
+	return err == nil && ip != nil && ip.IsLoopback()
+}
+
+// LocalServer admits literal loopback listeners only; TLS is still mandatory.
+func (g *Gateway) LocalServer(addr string) (*http.Server, error) {
+	if g.runtime.Profile != p.LocalDenseProfile || !loopbackAddress(addr) {
+		return nil, errors.New("local dense loopback listener required")
+	}
+	return g.Server(addr), nil
 }
 func fail(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -81,6 +109,10 @@ func fail(w http.ResponseWriter, status int, code string) {
 }
 func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// No request logging, even on rejection. Never echo paths, body, headers or IDs.
+	if g.runtime.Profile == p.LocalDenseProfile && !loopbackAddress(r.RemoteAddr) {
+		fail(w, 403, "local_only")
+		return
+	}
 	if r.TLS == nil {
 		fail(w, 400, "tls_required")
 		return
@@ -206,7 +238,7 @@ func (g *Gateway) stream(w http.ResponseWriter, r *http.Request, req p.Request) 
 		if !ok {
 			break
 		}
-		if id < 0 || id >= g.runtime.Binding.VocabularySize {
+		if id < 0 || id >= g.runtime.VocabularySize() {
 			backendError()
 			return
 		}
@@ -214,7 +246,7 @@ func (g *Gateway) stream(w http.ResponseWriter, r *http.Request, req p.Request) 
 			return
 		}
 		count++
-		if slices.Contains(g.runtime.Binding.MappedSpecialIDs["eos"], id) {
+		if slices.Contains(g.runtime.MappedSpecialIDs()["eos"], id) {
 			reason = "eos"
 			break
 		}

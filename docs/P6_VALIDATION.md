@@ -85,9 +85,66 @@ Missing hardware/version, integrity, parity, greedy/cache/stop or metric failure
 returns exit1 with static `gpu_gate=not_passed`. Success would pass only this
 bounded synthetic experiment; full P6/real-model/production remain pending.
 
-Skipped/unresolved: real Qwen2.5-0.5B quality; P4 method/human review; actual vLLM
+Skipped/unresolved at the preparation baseline: real Qwen2.5-0.5B quality; P4 method/human review; actual vLLM
 import/boot/CUDA prefill/decode/PagedAttention/cache evidence; GPU raw-logit parity;
 hardware cancellation/backpressure/abort and cache/memory pressure; matched GPU
 reference performance; dense Go/Python IPC/TLS binding; batching stress, TP/PP,
 LoRA/quantization/prefix caching/chunked prefill; production/security admission.
 No GPU throughput, TTFT, TPOT or memory result is reported passed here.
+
+## Trusted local reference integration (2026-10-10)
+
+Base: merged P6 preparation main `25460f5`. The user confirmed there is no
+external GPU runner and requested CPU integration first. The new
+`p6-local-dense-reference` profile connects the independent P5 FP64 runtime to
+Go through bounded pull IPC and verified loopback TLS; read
+LOCAL_REFERENCE_CONTRACT.md. P3 remote constructors still reject dense metadata.
+This does not admit the wider FP32 mock or complete P5/P6.
+
+The same pinned Go/Python/NumPy toolchain executed real compiled synthetic
+publications with F32, BF16 tied MHA, F16 untied GQA, and head_dim64 FP64 GQA.
+An independent scalar source-model oracle selected workloads with at least
+three emitted tokens; source files were deleted before the Go test. Original
+greedy IDs matched exactly for all four cases after real Python prefill/cache
+decode and verified TLS/SSE. Repeated requests reproduced output with separate
+worker/cache ownership. Physical stops, local plaintext stops, actual process
+cancellation/startup timeout, full-contract handshake, altered-publication
+rejection, loopback restriction, tokenizer/Secret mismatch and duplicate request
+rejection executed. The TLS integration runs `go test -race` inside base pytest,
+so it cannot silently skip for missing Torch or a missing fixture environment.
+
+Go helper-process tests deliberately replace numerical execution to verify frame
+and lifecycle failures: wrong ready identity, sequence/range/null/unknown/duplicate
+fields, oversized/truncated frames, Open/Next hangs, idle expiry, capacity,
+start failure, environment markers and concurrent Close/reap. Python tests cover
+strict frame/control types, short reads, no prefill before pull, cache sequencing,
+no decode after physical stop and static child diagnostics. These are CPU/process
+tests, not vLLM/CUDA mocks presented as hardware evidence.
+
+```sh
+PATH="$PWD/work/tools/go/bin:$PATH" make check
+PATH="$PWD/work/tools/go/bin:$PATH" go test -race -timeout=90s ./...
+PATH="$PWD/work/tools/go/bin:$PATH" go test -race -timeout=30s ./internal/referencebackend
+PATH="$PWD/work/tools/go/bin:$PATH" go test ./internal/referencebackend \
+  -run '^$' -fuzz '^FuzzBoundedFrame$' -fuzztime=3s -parallel=2
+PATH="$PWD/work/tools/go/bin:$PATH" .venv/bin/python -m pytest -q \
+  -c python/pyproject.toml python/tests/runtime/test_reference_bridge.py
+```
+
+Final `make check`: Go unit/vet, Ruff lint/format and **234 Python tests passed
+in 30.51s**, exit0;
+bridge suite **11 passed**. Full Go race and focused process race passed, exit0.
+IPC frame fuzzing passed **30,773 executions in 3s**, exit0. Numeric gates remain unchanged: P5 full logits
+atol=rtol=3e-4, cache/split atol=rtol=2e-6 and exact greedy. The bridge uses FP64;
+head_dim64 FP32 mock rejection is retained and covered by existing runtime tests.
+
+One initial concurrent Go gateway check hung in an existing TLS test and was
+terminated for inspection; a bounded focused rerun, full `make check` and full
+race run passed. One new fixture initially lacked a multi-step workload; selecting
+a qualifying prompt through the independent oracle fixed coverage without
+changing model data or acceptance thresholds. No failed run is counted as evidence.
+
+Still pending: controlled real Qwen quality, P4 review, actual GPU/vLLM boot,
+raw-logit/cache/performance gates, GPU engine cancellation/backpressure/abort and
+cache pressure, and GPU gateway integration. The new local FP64 path supplies
+CPU dense IPC/TLS evidence only. P7's physical GPU prerequisite remains unmet.
