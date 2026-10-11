@@ -70,8 +70,10 @@ explicitly replace vLLM/CUDA and cannot establish engine/kernel correctness.
 `gateway.New` preserves P3's fake script and fault timing. `NewRelay` adds a
 trusted in-process `Backend.Runtime/Open(ctx,physicalRequest)` and pulled
 `TokenStream.Next(ctx)/Close()`. Complete public runtime metadata must match.
-Only **p3-fake-token-only** wire binding/profile is admitted. No Python IPC,
-dense binding, real model or untrusted-server weight connection is implemented.
+`NewRelay` admits only **p3-fake-token-only** binding/profile. A separate
+`NewLocalDense` reference bridge admits P5 dense contracts only on trusted
+loopback systems; see LOCAL_REFERENCE_CONTRACT.md. The bridge runs NumPy FP64,
+not this PyTorch/vLLM graph, and admits no untrusted-server weight connection.
 
 TLS/auth/schema/identity/ledger/eight slots/deadline/SSE limits remain P3's.
 The relay copies mutable request fields, forwards physical prompt/stops and bound
@@ -81,8 +83,9 @@ on completion, error, invalid ID, timeout, disconnect and write failure (includi
 when Open returns a stream plus an error). Private error text never enters SSE.
 Open/Next/Close are trusted synchronous code and MUST honor cancellation, return
 promptly and never log requests. The gateway cannot terminate a misbehaving adapter;
-it does not abandon one in an extra goroutine. A real bridge still needs reviewed
-dense protocol/IPC, verified TLS client binding and engine abort mapping.
+it does not abandon one in an extra goroutine. The local reference bridge adds
+bounded process IPC and verified TLS dense binding; vLLM engine abort mapping
+and a real GPU gateway connection remain pending.
 
 ## External synthetic gate
 

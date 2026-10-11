@@ -1,4 +1,4 @@
-// Package clientruntime is the trusted Go client library for the P3 fake slice.
+// Package clientruntime is the trusted client for P3 and the local P6 reference.
 // The application supplies original IDs and a local tokenizer's byte pieces;
 // neither plaintext nor a Client Secret is sent to the gateway.
 package clientruntime
@@ -12,12 +12,14 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"slices"
 	"time"
 	"unicode/utf8"
 
+	"github.com/yakumioto/AloeForge/internal/dense"
 	p "github.com/yakumioto/AloeForge/internal/runtimeprotocol"
 	"github.com/yakumioto/AloeForge/internal/tokenbaseline"
 )
@@ -34,23 +36,42 @@ type Config struct {
 	BearerToken          string
 	Expected             p.Runtime // From the trusted compiler/configuration channel.
 	Secret               *tokenbaseline.Secret
-	TokenizerFingerprint string // Actual local tokenizer's independently checked hash.
+	DenseSecret          *dense.Secret // Only for the trusted local dense profile.
+	TokenizerFingerprint string        // Actual local tokenizer's independently checked hash.
 	Piece                Piece
 	TLS                  *tls.Config
 }
 type Client struct {
 	base, auth string
 	expected   p.Runtime
-	secret     *tokenbaseline.Secret
+	secret     tokenMapper
 	piece      Piece
 	special    map[string][]int
 	http       *http.Client
 }
 
+type tokenMapper interface {
+	MapIDs([]int) ([]int, error)
+	RestoreIDs([]int) ([]int, error)
+}
+
 func New(c Config) (*Client, error) {
 	u, err := url.Parse(c.URL)
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Path != "" || u.Opaque != "" || !p.ValidAuth(c.BearerToken) || c.Expected.Validate() != nil || c.Secret == nil || c.Piece == nil || c.TokenizerFingerprint != c.Expected.Binding.TokenizerFingerprint || !p.Equal(c.Secret.PublicBinding(), c.Expected.Binding) {
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Path != "" || u.Opaque != "" || !p.ValidAuth(c.BearerToken) || c.Expected.Validate() != nil || c.Piece == nil || c.TokenizerFingerprint != c.Expected.TokenizerFingerprint() {
 		return nil, errors.New("invalid trusted client configuration")
+	}
+	var secret tokenMapper
+	if c.Expected.Profile == p.LocalDenseProfile {
+		ip := net.ParseIP(u.Hostname())
+		if ip == nil || !ip.IsLoopback() || c.Secret != nil || c.DenseSecret == nil || c.DenseSecret.MatchesContract(*c.Expected.Dense) != nil {
+			return nil, errors.New("invalid local dense client configuration")
+		}
+		secret = c.DenseSecret
+	} else {
+		if c.DenseSecret != nil || c.Secret == nil || !p.Equal(c.Secret.PublicBinding(), c.Expected.Binding) {
+			return nil, errors.New("invalid trusted client configuration")
+		}
+		secret = c.Secret
 	}
 	tc := &tls.Config{MinVersion: tls.VersionTLS12}
 	if c.TLS != nil {
@@ -63,15 +84,18 @@ func New(c Config) (*Client, error) {
 		}
 	}
 	transport := &http.Transport{TLSClientConfig: tc, Proxy: http.ProxyFromEnvironment, TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 10 * time.Second, MaxResponseHeaderBytes: 8192, MaxConnsPerHost: 8, MaxIdleConnsPerHost: 8, IdleConnTimeout: 30 * time.Second, DisableCompression: true}
+	if c.Expected.Profile == p.LocalDenseProfile {
+		transport.Proxy = nil
+	}
 	h := &http.Client{Transport: transport, Timeout: 35 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	special := make(map[string][]int)
-	for role, ids := range c.Expected.Binding.MappedSpecialIDs {
-		special[role], err = c.Secret.RestoreIDs(ids)
+	for role, ids := range c.Expected.MappedSpecialIDs() {
+		special[role], err = secret.RestoreIDs(ids)
 		if err != nil {
 			return nil, errors.New("invalid special binding")
 		}
 	}
-	return &Client{base: c.URL, auth: c.BearerToken, expected: p.Clone(c.Expected), secret: c.Secret, piece: c.Piece, special: special, http: h}, nil
+	return &Client{base: c.URL, auth: c.BearerToken, expected: p.Clone(c.Expected), secret: secret, piece: c.Piece, special: special, http: h}, nil
 }
 func (c *Client) Close() { c.http.CloseIdleConnections() }
 func (c *Client) request(ctx context.Context, method, path string, body []byte) (*http.Response, error) {
@@ -170,7 +194,7 @@ func (c *Client) Generate(ctx context.Context, prompt []int, o Options) (Result,
 		stops = []int{}
 	}
 	temp := 0.0
-	req := p.Request{ProtocolVersion: c.expected.ProtocolVersion, ModelID: c.expected.ModelID, ArtifactID: c.expected.ArtifactID, BindingID: c.expected.Binding.BindingID, RequestID: o.RequestID, PromptTokenIDs: mapped, StopTokenIDs: stops, Sampling: p.Sampling{Temperature: &temp, MaxTokens: o.MaxTokens}, Stream: true}
+	req := p.Request{ProtocolVersion: c.expected.ProtocolVersion, ModelID: c.expected.ModelID, ArtifactID: c.expected.ArtifactID, BindingID: c.expected.BindingID(), RequestID: o.RequestID, PromptTokenIDs: mapped, StopTokenIDs: stops, Sampling: p.Sampling{Temperature: &temp, MaxTokens: o.MaxTokens}, Stream: true}
 	if req.Validate(c.expected) != nil {
 		return result, errors.New("invalid_local_request")
 	}
@@ -215,7 +239,7 @@ func (c *Client) Generate(ctx context.Context, prompt []int, o Options) (Result,
 		if err != nil {
 			return incomplete("stream_interrupted")
 		}
-		if event.Validate(o.RequestID, sequence, c.expected.Binding.VocabularySize) != nil {
+		if event.Validate(o.RequestID, sequence, c.expected.VocabularySize()) != nil {
 			return incomplete("invalid_stream")
 		}
 		if event.FinishReason != "" {

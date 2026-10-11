@@ -60,6 +60,8 @@ source/Secret/worker imports. It implements expanded-coordinate CPU prefill,
 decode/cache and greedy. Norm gamma folds offline; an exact sparse isometry with
 paired/group/FFN transforms is admitted only as noise-off diagnostic math.
 P3's gateway remains fake-only; the P5 runtime is not a production wire backend.
+P6 now also provides a separate trusted-loopback FP64 reference bridge via bounded
+Go/Python IPC and dense client binding; see LOCAL_REFERENCE_CONTRACT.md.
 Real checkpoint quality, full method admission and P6 GPU gates remain pending.
 See DENSE_COMPILER_CONTRACT.md and P5_VALIDATION.md.
 
@@ -72,4 +74,7 @@ geometry passes fixed numeric gates; wider FP32 cache parity remains unresolved
 and is explicitly rejected by that mock. The controlled GPU candidate needs actual
 hardware evidence. `gateway.NewRelay` exercises a synchronous physical-token
 Backend/TokenStream lifecycle, still under P3 mock identities, without dense
-binding/IPC or an actual Python process. See VLLM_BACKEND_CONTRACT.md.
+binding/IPC or an actual Python process in that P3 mock. The separate P6 local
+reference bridge now runs an artifact-only Python process with dense TLS binding;
+it does not connect this FP32/vLLM candidate to the gateway. See
+VLLM_BACKEND_CONTRACT.md and LOCAL_REFERENCE_CONTRACT.md.

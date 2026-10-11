@@ -82,7 +82,10 @@ P6 preparation is described in
 publication and external identities; the graph keeps physical residual width
 separate from logical head_dim. The GPU toolchain/runner is an unexecuted candidate,
 with no PagedAttention/performance claim. P5 quality and actual GPU gates remain
-pending. The Go relay still admits only P3 mock metadata, with no dense wire/IPC.
+pending. A separate trusted-loopback Go/Python reference bridge now supports
+dense binding and FP64 CPU execution; see
+[`docs/LOCAL_REFERENCE_CONTRACT.md`](docs/LOCAL_REFERENCE_CONTRACT.md). It runs no
+vLLM/GPU graph and does not change P3 remote admission.
 
 P3 libraries and exact wire/API/limits are documented in
 [`docs/RUNTIME_PROTOCOL.md`](docs/RUNTIME_PROTOCOL.md). Applications supply locally
@@ -140,8 +143,10 @@ use NumPy, never import the worker, and accept only bounded diagnostic toy array
 P3 adds `internal/clientruntime`,
 `internal/gateway` and `internal/runtimeprotocol` with diagnostic fake/mock backends.
 P2 adds `internal/tokenbaseline` atop the P1 inventory/artifact packages.
-`aloeforge_runtime` contains the separate P6 graph/plugin candidate; it shares
-artifact validation with the reference, never its numerical forward or worker.
+`aloeforge_runtime` contains the separate P6 graph/plugin candidate; that graph
+shares artifact validation, never reference numerical forward or worker transforms.
+Its distinct `reference_worker` entry point calls P5's FP64 reference for the
+trusted local bridge. `internal/referencebackend` owns bounded process IPC/lifetime.
 
 The trusted offline compiler/worker may access source weights and private
 material. The trusted client owns Client Secret, tokenizer, plaintext prompts
@@ -154,8 +159,8 @@ must still keep sensitive data outside tracked files and cloud prompts.
 Go/Python control messages must be small, versioned and size bounded. Tensors
 move through validated files, mmap or bounded streams, never JSON payloads.
 P1 validates paths and structural shapes/dtypes; P5 adds exact diagnostic dense
-layout and bounded offline worker control/files. Real gateway/runtime IPC remains
-future work. See
+layout and bounded offline worker control/files. P6 adds trusted local reference
+IPC; real GPU gateway/backend integration remains future work. See
 [`docs/BOOTSTRAP_CONTRACTS.md`](docs/BOOTSTRAP_CONTRACTS.md) for the four versioned,
 explicitly unimplemented contract drafts and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the intended boundaries.
